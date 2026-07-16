@@ -21,6 +21,11 @@ the future database URL, Chess.com username and User-Agent, import limit, future
 Stockfish path and analysis limits, and the frontend origin. These integrations
 are not implemented yet.
 
+The SQLite schema and SQLAlchemy ORM models for games and per-move analysis are
+implemented. When explicitly initialized with the default configuration, the
+local database will be stored at `backend/data/chess.db`. Game import and
+Stockfish analysis are not implemented yet.
+
 From the repository root:
 
 ```bash
