@@ -10,6 +10,17 @@ Chess AI Teacher is a local, single-user application intended to help review che
 
 ## Backend
 
+Create an optional local configuration file from the provided example:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+The backend runs without `.env` by using safe defaults. The configuration covers
+the future database URL, Chess.com username and User-Agent, import limit, future
+Stockfish path and analysis limits, and the frontend origin. These integrations
+are not implemented yet.
+
 From the repository root:
 
 ```bash
