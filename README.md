@@ -26,6 +26,12 @@ implemented. When explicitly initialized with the default configuration, the
 local database will be stored at `backend/data/chess.db`. Game import and
 Stockfish analysis are not implemented yet.
 
+The repository layer encapsulates game and move-analysis SQL queries, including
+filters, pagination, personal analytics sorting, and aggregate calculations.
+Repositories flush changes when needed but never commit automatically; callers
+own transaction boundaries. Import, analysis services, and REST APIs are not
+implemented yet.
+
 From the repository root:
 
 ```bash
