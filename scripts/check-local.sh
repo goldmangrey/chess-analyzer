@@ -18,6 +18,14 @@ has npm && ok "npm найден" || fail "npm не найден"
 [[ -f "$ROOT_DIR/backend/.env" ]] && ok "backend/.env найден" || warn "backend/.env отсутствует; будут использованы defaults"
 [[ -f "$ROOT_DIR/frontend/.env.local" ]] && ok "frontend/.env.local найден" || warn "frontend/.env.local отсутствует; будет использован fallback API URL"
 
+if [[ -f "$ROOT_DIR/frontend/.env.local" ]]; then
+  api_base_url="$(sed -n 's/^NEXT_PUBLIC_API_BASE_URL=//p' "$ROOT_DIR/frontend/.env.local" | tail -n 1 | tr -d '\r')"
+  api_base_without_slashes="$(printf '%s' "$api_base_url" | sed 's:/*$::')"
+  if [[ "$api_base_without_slashes" == */api ]]; then
+    warn "NEXT_PUBLIC_API_BASE_URL должен быть origin без /api: $api_base_url"
+  fi
+fi
+
 stockfish_path=""
 if [[ -f "$ROOT_DIR/backend/.env" ]]; then
   stockfish_path="$(sed -n 's/^STOCKFISH_PATH=//p' "$ROOT_DIR/backend/.env" | tail -n 1)"
