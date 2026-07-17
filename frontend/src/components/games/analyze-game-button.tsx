@@ -47,7 +47,7 @@ export function AnalyzeGameButton({ gameId, status }: { gameId: number; status: 
       leftIcon={repeat ? <RefreshCw size={14} /> : <ScanSearch size={14} />}
       onClick={analyze}
     >
-      {analyzing ? "Анализируется" : repeat ? "Повторить анализ" : "Анализировать"}
+      {analyzing ? "Создаём отчёт" : repeat ? "Повторить анализ" : status === "failed" ? "Повторить" : "Получить отчёт"}
     </Button>
   );
 }

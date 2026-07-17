@@ -144,6 +144,43 @@ export type SystemStatus = {
   chesscom: { configured: boolean; user_agent_configured: boolean };
 };
 
+export type SyncStatus = "never" | "running" | "completed" | "failed";
+export type SyncMode = "initial" | "incremental";
+export type AppSettings = {
+  chesscom_username: string | null;
+  auto_sync_enabled: boolean;
+  auto_analyze_latest: boolean;
+  initial_sync_completed: boolean;
+  last_sync_started_at: string | null;
+  last_sync_completed_at: string | null;
+  last_sync_status: SyncStatus;
+  last_sync_error: string | null;
+};
+export type AppSettingsUpdate = {
+  chesscom_username?: string;
+  auto_sync_enabled?: boolean;
+  auto_analyze_latest?: boolean;
+};
+export type ChessComSyncRequest = {
+  username?: string;
+  mode?: SyncMode;
+  auto_analyze_latest?: boolean;
+  initial_months?: 3 | 6 | 12;
+};
+export type ChessComSyncResponse = {
+  mode: SyncMode;
+  username: string;
+  examined: number;
+  imported: number;
+  duplicates: number;
+  invalid: number;
+  imported_game_ids: number[];
+  latest_game_id: number | null;
+  analysis_queued_game_id: number | null;
+  started_at: string;
+  completed_at: string;
+};
+
 export type GameDetailResponse = {
   id: number;
   external_id: string;

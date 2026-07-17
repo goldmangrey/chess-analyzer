@@ -4,4 +4,6 @@ export * from "./errors";
 export * from "./games";
 export * from "./import";
 export * from "./system";
+export * from "./settings";
+export * from "./sync";
 export * from "./types";

@@ -16,7 +16,7 @@ def test_sqlite_foreign_keys_are_enabled(test_engine: Engine) -> None:
 def test_init_db_creates_only_expected_tables(test_engine: Engine) -> None:
     table_names = set(inspect(test_engine).get_table_names())
 
-    assert table_names == {"games", "move_analysis"}
+    assert table_names == {"games", "move_analysis", "app_settings"}
 
 
 def test_relative_sqlite_path_is_resolved_from_backend() -> None:

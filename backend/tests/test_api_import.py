@@ -41,7 +41,7 @@ def record(identifier: str, raw_pgn: str | None = None) -> ChessComGameRecord:
 
 def test_import_defaults_commit_fields_pending_and_analyze_false(api_app, api_client) -> None:
     api_app.dependency_overrides[get_chesscom_client] = lambda: FakeClient([record("default")])
-    response = api_client.post("/api/import/chess-com", json={"analyze": False})
+    response = api_client.post("/api/import/chess-com", json={})
     assert response.status_code == 200
     assert response.json() == {
         "requested": 10,

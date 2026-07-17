@@ -47,6 +47,13 @@ class MoveClassification(str, Enum):
     BLUNDER = "blunder"
 
 
+class SyncStatus(str, Enum):
+    NEVER = "never"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
 def enum_type(enum_class: type[Enum], name: str) -> SqlEnum:
     return SqlEnum(
         enum_class,
@@ -145,3 +152,24 @@ class MoveAnalysis(Base):
     )
 
     game: Mapped[Game] = relationship(back_populates="move_analyses")
+
+
+class AppSettings(Base):
+    __tablename__ = "app_settings"
+    __table_args__ = (CheckConstraint("id = 1", name="ck_app_settings_singleton"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    chesscom_username: Mapped[str | None] = mapped_column(String(255))
+    auto_sync_enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    auto_analyze_latest: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    initial_sync_completed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    last_sync_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_sync_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_sync_status: Mapped[SyncStatus] = mapped_column(
+        enum_type(SyncStatus, "app_settings_sync_status"),
+        default=SyncStatus.NEVER,
+        nullable=False,
+    )
+    last_sync_error: Mapped[str | None] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)

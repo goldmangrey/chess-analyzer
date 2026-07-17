@@ -14,7 +14,7 @@ from app.schemas import (
 )
 
 
-REQUIRED_TABLES = {"games", "move_analysis"}
+REQUIRED_TABLES = {"games", "move_analysis", "app_settings"}
 
 
 def _safe_path(path: Path) -> str:

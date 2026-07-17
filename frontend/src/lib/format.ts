@@ -9,6 +9,14 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", {
   year: "numeric",
   timeZone: "UTC",
 });
+const dateTimeFormatter = new Intl.DateTimeFormat("ru-RU", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "UTC",
+});
 
 function isFiniteNumber(value: number | null | undefined): value is number {
   return typeof value === "number" && Number.isFinite(value);
@@ -31,6 +39,12 @@ export function formatDate(value: string | null | undefined): string {
   if (!value) return "Дата неизвестна";
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "Дата неизвестна" : dateFormatter.format(date);
+}
+
+export function formatDateTime(value: string | null | undefined): string {
+  if (!value) return "Ещё не выполнялась";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Дата неизвестна" : dateTimeFormatter.format(date);
 }
 
 export function formatRelativeDate(

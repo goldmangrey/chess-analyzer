@@ -14,6 +14,10 @@ from app.services.chesscom_client import (
 logger = logging.getLogger(__name__)
 
 
+class SyncAlreadyRunningError(RuntimeError):
+    pass
+
+
 def _response(status_code: int, error: str, message: str) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
@@ -22,6 +26,16 @@ def _response(status_code: int, error: str, message: str) -> JSONResponse:
 
 
 def register_exception_handlers(app: FastAPI) -> None:
+    @app.exception_handler(SyncAlreadyRunningError)
+    async def sync_already_running_handler(
+        _request: Request, _exception: SyncAlreadyRunningError
+    ) -> JSONResponse:
+        return _response(
+            409,
+            "sync_already_running",
+            "Chess.com synchronization is already running",
+        )
+
     @app.exception_handler(GameNotFoundError)
     async def game_not_found_handler(
         _request: Request,

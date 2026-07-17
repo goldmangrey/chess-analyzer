@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 from sqlalchemy.exc import IntegrityError
@@ -6,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.models import AnalysisStatus
 from app.repositories.games_repository import create_game, external_id_exists
 from app.schemas import GameCreate
-from app.services.chesscom_client import ChessComClient
+from app.services.chesscom_client import ChessComClient, ChessComGameRecord
 from app.services.pgn_parser import PgnParseError, parse_pgn
 
 
@@ -86,3 +87,55 @@ def import_recent_games(
         examined=examined,
         imported_game_ids=tuple(imported_ids),
     )
+
+
+def import_game_records(
+    session: Session,
+    records: Iterable[ChessComGameRecord],
+    username: str,
+    *,
+    requested: int,
+) -> ImportGamesResult:
+    """Import a bounded record collection without committing or analyzing it."""
+    normalized_username = username.strip()
+    if not normalized_username:
+        raise ValueError("username must not be empty")
+    imported_ids: list[int] = []
+    duplicates = invalid = examined = 0
+    for record in records:
+        examined += 1
+        if external_id_exists(session, record.external_id):
+            duplicates += 1
+            continue
+        if not record.pgn:
+            invalid += 1
+            continue
+        try:
+            parsed = parse_pgn(record.pgn, normalized_username, record.external_id)
+        except PgnParseError:
+            invalid += 1
+            continue
+        data = GameCreate(
+            external_id=parsed.external_id,
+            platform="chess.com",
+            played_at=parsed.played_at,
+            white_username=parsed.white_username,
+            black_username=parsed.black_username,
+            white_rating=parsed.white_rating,
+            black_rating=parsed.black_rating,
+            user_color=parsed.user_color,
+            result=parsed.result,
+            time_control=parsed.time_control,
+            opening_code=parsed.opening_code,
+            opening_name=parsed.opening_name,
+            pgn=parsed.pgn,
+            analysis_status=AnalysisStatus.PENDING,
+        )
+        try:
+            with session.begin_nested():
+                game = create_game(session, data)
+        except IntegrityError:
+            duplicates += 1
+            continue
+        imported_ids.append(game.id)
+    return ImportGamesResult(requested, len(imported_ids), duplicates, invalid, examined, tuple(imported_ids))

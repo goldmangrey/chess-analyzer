@@ -1,8 +1,9 @@
 from datetime import datetime
+from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator
 
-from app.models import AnalysisStatus, Color, GameResult, MoveClassification
+from app.models import AnalysisStatus, Color, GameResult, MoveClassification, SyncStatus
 
 
 class CreateSchema(BaseModel):
@@ -184,7 +185,7 @@ class ApiSchema(BaseModel):
 class ChessComImportRequest(ApiSchema):
     username: str | None = None
     limit: int | None = Field(default=None, ge=1, le=50)
-    analyze: bool = True
+    analyze: bool = False
 
     @field_validator("username")
     @classmethod
@@ -299,3 +300,66 @@ class SystemStatusResponse(ApiSchema):
     database: DatabaseStatus
     stockfish: StockfishStatus
     chesscom: ChessComStatus
+
+
+class AppSettingsResponse(ReadSchema):
+    chesscom_username: str | None
+    auto_sync_enabled: bool
+    auto_analyze_latest: bool
+    initial_sync_completed: bool
+    last_sync_started_at: datetime | None
+    last_sync_completed_at: datetime | None
+    last_sync_status: SyncStatus
+    last_sync_error: str | None
+
+
+class AppSettingsUpdateRequest(ApiSchema):
+    chesscom_username: str | None = Field(default=None, min_length=1, max_length=100)
+    auto_sync_enabled: StrictBool | None = None
+    auto_analyze_latest: StrictBool | None = None
+
+    @field_validator("chesscom_username")
+    @classmethod
+    def normalize_username(cls, value: str | None) -> str | None:
+        if value is None:
+            raise ValueError("username must not be empty")
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("username must not be empty")
+        return normalized
+
+
+class SyncMode(str, Enum):
+    INITIAL = "initial"
+    INCREMENTAL = "incremental"
+
+
+class ChessComSyncRequest(ApiSchema):
+    username: str | None = Field(default=None, max_length=100)
+    mode: SyncMode = SyncMode.INCREMENTAL
+    auto_analyze_latest: StrictBool | None = None
+    initial_months: int | None = Field(default=None, ge=1, le=24)
+
+    @field_validator("username")
+    @classmethod
+    def normalize_sync_username(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("username must not be empty")
+        return normalized
+
+
+class ChessComSyncResponse(ApiSchema):
+    mode: SyncMode
+    username: str
+    examined: int
+    imported: int
+    duplicates: int
+    invalid: int
+    imported_game_ids: tuple[int, ...]
+    latest_game_id: int | None
+    analysis_queued_game_id: int | None
+    started_at: datetime
+    completed_at: datetime

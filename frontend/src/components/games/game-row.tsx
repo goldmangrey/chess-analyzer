@@ -37,7 +37,7 @@ export function GameRow({ game }: { game: ApiGameListItem }) {
       <td className="technical-number px-3 py-4 text-sm">{game.mistakes}</td>
       <td className="technical-number px-3 py-4 text-sm text-blunder-text">{game.blunders}</td>
       <td className="px-3 py-4"><StatusPill tone={analysisStatusTone(game.analysis_status)} dot className={game.analysis_status === "analyzing" ? "[&>span:first-child]:animate-pulse motion-reduce:[&>span:first-child]:animate-none" : undefined}>{analysisStatusLabel(game.analysis_status)}</StatusPill></td>
-      <td className="rounded-r-2xl py-4 pl-3 pr-4 text-right"><AnalyzeGameButton gameId={game.id} status={game.analysis_status} /></td>
+      <td className="rounded-r-2xl py-4 pl-3 pr-4 text-right">{game.analysis_status === "completed" ? <Link href={`/games/${game.id}`} className="focus-ring inline-flex min-h-9 items-center rounded-full bg-forest px-4 text-xs font-semibold text-white">Открыть отчёт</Link> : <AnalyzeGameButton gameId={game.id} status={game.analysis_status} />}</td>
     </tr>
   );
 }

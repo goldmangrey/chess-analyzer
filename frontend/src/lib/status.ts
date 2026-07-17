@@ -2,7 +2,7 @@ import type { StatusPillTone } from "@/components/ui/status-pill";
 import type { AnalysisStatus, GameResult, MoveClassification } from "@/lib/api/types";
 
 export function analysisStatusLabel(status: AnalysisStatus): string {
-  return { pending: "Ожидает", analyzing: "Анализируется", completed: "Завершён", failed: "Ошибка" }[status];
+  return { pending: "Отчёт не создан", analyzing: "Создаём отчёт", completed: "Отчёт готов", failed: "Ошибка анализа" }[status];
 }
 
 export function analysisStatusTone(status: AnalysisStatus): StatusPillTone {

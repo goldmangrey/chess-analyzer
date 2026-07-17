@@ -10,6 +10,8 @@ ENVIRONMENT_VARIABLES = (
     "CHESS_USERNAME",
     "CHESSCOM_USER_AGENT",
     "IMPORT_GAMES_LIMIT",
+    "INITIAL_SYNC_MONTHS",
+    "INITIAL_SYNC_MAX_GAMES",
     "STOCKFISH_PATH",
     "STOCKFISH_MOVE_TIME_MS",
     "STOCKFISH_PV_LENGTH",
@@ -41,6 +43,8 @@ def test_default_values() -> None:
             "ChessAITeacher/1.0 (contact: github.com/username)"
         ),
         "import_games_limit": 10,
+        "initial_sync_months": 12,
+        "initial_sync_max_games": 500,
         "stockfish_path": "./stockfish/stockfish",
         "stockfish_move_time_ms": 250,
         "stockfish_pv_length": 6,

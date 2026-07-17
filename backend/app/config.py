@@ -37,6 +37,8 @@ class Settings(BaseSettings):
         le=50,
         validation_alias="IMPORT_GAMES_LIMIT",
     )
+    initial_sync_months: int = Field(default=12, ge=1, le=24, validation_alias="INITIAL_SYNC_MONTHS")
+    initial_sync_max_games: int = Field(default=500, ge=1, le=2000, validation_alias="INITIAL_SYNC_MAX_GAMES")
     stockfish_path: str = Field(
         default="./stockfish/stockfish",
         validation_alias="STOCKFISH_PATH",

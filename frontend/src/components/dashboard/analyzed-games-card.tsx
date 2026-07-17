@@ -8,11 +8,11 @@ export function AnalyzedGamesCard({ analyzed, total }: { analyzed: number; total
   return (
     <BentoCard as="section" tone="lime" className="flex h-full items-center justify-between gap-5 p-6 sm:p-8">
       <div>
-        <p className="text-sm font-semibold text-text-secondary">Проанализировано</p>
+        <p className="text-sm font-semibold text-text-secondary">Готово отчётов</p>
         <p className="technical-number mt-3 text-4xl font-semibold tracking-[-0.055em]">{analyzed} / {total}</p>
-        <p className="mt-2 text-xs text-text-muted">завершённых партий</p>
+        <p className="mt-2 text-xs text-text-muted">из всей истории</p>
       </div>
-      <div className="relative size-28 shrink-0" role="img" aria-label={`Проанализировано ${percentage}% партий`}>
+      <div className="relative size-28 shrink-0" role="img" aria-label={`Готово отчётов для ${percentage}% партий`}>
         <svg viewBox="0 0 100 100" className="-rotate-90" aria-hidden="true">
           <circle cx="50" cy="50" r="42" fill="none" stroke="var(--surface)" strokeWidth="9" />
           <circle cx="50" cy="50" r="42" fill="none" stroke="var(--forest)" strokeWidth="9" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={offset} />

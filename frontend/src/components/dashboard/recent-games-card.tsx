@@ -1,15 +1,16 @@
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
-import { BentoCard, StatusPill } from "@/components/ui";
+import { BentoCard, StatusPill, ToastProvider } from "@/components/ui";
 import type { RecentGameStats } from "@/lib/api/types";
 import { formatCpLoss, formatDate } from "@/lib/format";
 import { analysisStatusLabel, analysisStatusTone, gameResultLabel } from "@/lib/status";
+import { AnalyzeGameButton } from "@/components/games/analyze-game-button";
 
 const resultClasses = { win: "text-best", draw: "text-text-secondary", loss: "text-blunder" };
 
 export function RecentGamesCard({ games }: { games: RecentGameStats[] }) {
-  return (
+  return <ToastProvider>
     <BentoCard as="section" className="h-full p-6 sm:p-8">
       <div className="flex items-center justify-between gap-4">
         <div><h2 className="text-2xl font-semibold tracking-[-0.04em]">Последние партии</h2><p className="mt-2 text-sm text-text-secondary">Свежие результаты и статус анализа</p></div>
@@ -20,9 +21,9 @@ export function RecentGamesCard({ games }: { games: RecentGameStats[] }) {
       ) : (
         <div className="mt-6 divide-y divide-[var(--border-subtle)]">
           {games.map((game) => (
-            <Link href={`/games/${game.game_id}`} key={game.game_id} className="focus-ring group grid gap-3 rounded-xl py-4 transition hover:bg-surface-muted sm:grid-cols-[minmax(0,1.4fr)_auto_auto] sm:items-center sm:px-2">
+            <div key={game.game_id} className="group grid gap-3 rounded-xl py-4 transition hover:bg-surface-muted sm:grid-cols-[minmax(0,1.4fr)_auto_auto] sm:items-center sm:px-2">
               <div className="min-w-0">
-                <div className="flex items-center gap-2"><span aria-hidden="true" className={game.user_color === "white" ? "size-3 rounded-sm border border-[var(--border-strong)] bg-white" : "size-3 rounded-sm bg-surface-dark"} /><p className="truncate text-sm font-semibold">vs {game.opponent_username}</p></div>
+                <div className="flex items-center gap-2"><span aria-hidden="true" className={game.user_color === "white" ? "size-3 rounded-sm border border-[var(--border-strong)] bg-white" : "size-3 rounded-sm bg-surface-dark"} /><Link href={`/games/${game.game_id}`} className="focus-ring truncate rounded-lg text-sm font-semibold hover:text-forest">vs {game.opponent_username}</Link></div>
                 <p className="mt-1 truncate text-xs text-text-muted">{game.opening_code ? `${game.opening_code} · ` : ""}{game.opening_name ?? "Дебют не определён"} · {formatDate(game.played_at)}</p>
               </div>
               <div className="flex flex-wrap items-center gap-3 text-xs">
@@ -32,12 +33,12 @@ export function RecentGamesCard({ games }: { games: RecentGameStats[] }) {
               </div>
               <div className="flex items-center justify-between gap-2 sm:justify-end">
                 <StatusPill tone={analysisStatusTone(game.analysis_status)} dot>{analysisStatusLabel(game.analysis_status)}</StatusPill>
-                <ArrowUpRight aria-hidden="true" size={16} className="text-text-muted transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                {game.analysis_status === "completed" ? <Link href={`/games/${game.game_id}`} aria-label="Открыть отчёт" className="focus-ring rounded-full p-2 text-forest"><ArrowUpRight aria-hidden="true" size={16} /></Link> : game.analysis_status === "analyzing" ? null : <AnalyzeGameButton gameId={game.game_id} status={game.analysis_status} />}
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}
     </BentoCard>
-  );
+  </ToastProvider>;
 }

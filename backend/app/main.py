@@ -5,7 +5,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import games, import_games, stats, system
+from app.api import games, import_games, settings as settings_api, stats, sync, system
 from app.config import Settings, get_settings
 from app.database import init_db
 from app.exceptions import register_exception_handlers
@@ -48,6 +48,8 @@ def create_app(
     application.include_router(games.router)
     application.include_router(stats.router)
     application.include_router(system.router)
+    application.include_router(settings_api.router)
+    application.include_router(sync.router)
     register_exception_handlers(application)
 
     @application.get("/health")

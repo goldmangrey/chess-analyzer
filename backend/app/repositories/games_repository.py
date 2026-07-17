@@ -65,6 +65,17 @@ def external_id_exists(session: Session, external_id: str) -> bool:
     return bool(session.scalar(statement))
 
 
+def get_latest_game_by_ids(session: Session, game_ids: tuple[int, ...]) -> Game | None:
+    if not game_ids:
+        return None
+    return session.scalar(
+        select(Game)
+        .where(Game.id.in_(game_ids))
+        .order_by(Game.played_at.desc().nullslast(), Game.id.desc())
+        .limit(1)
+    )
+
+
 def set_analysis_status(
     session: Session,
     game: Game,
