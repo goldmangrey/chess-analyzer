@@ -23,6 +23,11 @@ class Settings(BaseSettings):
         default="sqlite:///./data/chess.db",
         validation_alias="DATABASE_URL",
     )
+    auto_create_schema: bool = Field(default=True, validation_alias="AUTO_CREATE_SCHEMA")
+    db_pool_size: int = Field(default=5, ge=1, le=20, validation_alias="DB_POOL_SIZE")
+    db_max_overflow: int = Field(default=5, ge=0, le=20, validation_alias="DB_MAX_OVERFLOW")
+    db_pool_timeout: int = Field(default=30, ge=1, validation_alias="DB_POOL_TIMEOUT")
+    db_pool_recycle: int = Field(default=1800, ge=0, validation_alias="DB_POOL_RECYCLE")
     chess_username: str = Field(
         default="Yeskendir",
         validation_alias="CHESS_USERNAME",

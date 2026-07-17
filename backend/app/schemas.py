@@ -278,9 +278,12 @@ class ApiErrorResponse(ApiSchema):
 
 class DatabaseStatus(ApiSchema):
     status: str
-    path: str
+    backend: str
+    path: str | None
     writable: bool
     tables_ready: bool
+    schema_ready: bool
+    migration_revision: str | None
 
 
 class StockfishStatus(ApiSchema):

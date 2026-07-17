@@ -5,7 +5,8 @@ from sqlalchemy import Engine, inspect
 from sqlalchemy.engine import make_url
 
 from app.config import BACKEND_DIR, Settings
-from app.database import normalize_database_url
+from app.database import ALEMBIC_HEAD
+from app.database_url import database_backend, resolve_database_url
 from app.schemas import (
     ChessComStatus,
     DatabaseStatus,
@@ -25,16 +26,22 @@ def _safe_path(path: Path) -> str:
 
 
 def get_system_status(settings: Settings, engine: Engine) -> SystemStatusResponse:
-    database_url = make_url(normalize_database_url(settings.database_url))
-    database_path = Path(database_url.database) if database_url.database else BACKEND_DIR
-    parent = database_path.parent
+    database_url = make_url(resolve_database_url(settings.database_url))
+    backend = database_backend(settings.database_url)
+    database_path = Path(database_url.database) if backend == "sqlite" and database_url.database else None
+    parent = database_path.parent if database_path else None
     database_ready = False
     tables_ready = False
+    migration_revision = None
     try:
         with engine.connect() as connection:
             connection.exec_driver_sql("SELECT 1")
-        tables_ready = REQUIRED_TABLES.issubset(set(inspect(engine).get_table_names()))
-        database_ready = tables_ready
+            table_names = set(inspect(connection).get_table_names())
+            if "alembic_version" in table_names:
+                migration_revision = connection.exec_driver_sql("SELECT version_num FROM alembic_version").scalar()
+        tables_ready = REQUIRED_TABLES.issubset(table_names)
+        revision_ready = settings.auto_create_schema or migration_revision == ALEMBIC_HEAD
+        database_ready = tables_ready and revision_ready
     except Exception:
         database_ready = False
 
@@ -45,10 +52,13 @@ def get_system_status(settings: Settings, engine: Engine) -> SystemStatusRespons
     stockfish_executable = stockfish_file and os.access(configured_path, os.X_OK)
 
     database = DatabaseStatus(
-        status="ready" if database_ready else "unavailable",
-        path=_safe_path(database_path),
-        writable=parent.exists() and os.access(parent, os.W_OK),
+        status="ready" if database_ready else "degraded",
+        backend=backend,
+        path=_safe_path(database_path) if database_path else None,
+        writable=bool(parent and parent.exists() and os.access(parent, os.W_OK)) if backend == "sqlite" else True,
         tables_ready=tables_ready,
+        schema_ready=tables_ready,
+        migration_revision=migration_revision,
     )
     stockfish = StockfishStatus(
         status="ready" if stockfish_executable else "unavailable",

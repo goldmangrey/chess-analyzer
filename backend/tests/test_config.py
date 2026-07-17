@@ -7,6 +7,11 @@ from app.config import Settings, get_settings
 ENVIRONMENT_VARIABLES = (
     "APP_ENV",
     "DATABASE_URL",
+    "AUTO_CREATE_SCHEMA",
+    "DB_POOL_SIZE",
+    "DB_MAX_OVERFLOW",
+    "DB_POOL_TIMEOUT",
+    "DB_POOL_RECYCLE",
     "CHESS_USERNAME",
     "CHESSCOM_USER_AGENT",
     "IMPORT_GAMES_LIMIT",
@@ -38,6 +43,11 @@ def test_default_values() -> None:
     assert settings.model_dump() == {
         "app_env": "development",
         "database_url": "sqlite:///./data/chess.db",
+        "auto_create_schema": True,
+        "db_pool_size": 5,
+        "db_max_overflow": 5,
+        "db_pool_timeout": 30,
+        "db_pool_recycle": 1800,
         "chess_username": "Yeskendir",
         "chesscom_user_agent": (
             "ChessAITeacher/1.0 (contact: github.com/username)"

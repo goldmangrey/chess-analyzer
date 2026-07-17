@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from app.models import AppSettings, SyncStatus, utc_now
 
@@ -13,8 +14,14 @@ def get_or_create_settings(session: Session) -> AppSettings:
     settings = get_settings(session)
     if settings is None:
         settings = AppSettings(id=1)
-        session.add(settings)
-        session.flush()
+        try:
+            with session.begin_nested():
+                session.add(settings)
+                session.flush()
+        except IntegrityError:
+            settings = get_settings(session)
+            if settings is None:
+                raise
     return settings
 
 

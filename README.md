@@ -49,6 +49,67 @@ STOCKFISH_PATH=/opt/homebrew/bin/stockfish
 User-Agent должен содержать ваш корректный контакт. Для Intel Mac путь Stockfish
 может отличаться; используйте результат `which stockfish`.
 
+### Database backends and migrations
+
+SQLite остаётся default для локальной разработки:
+
+```env
+DATABASE_URL=sqlite:///./data/chess.db
+AUTO_CREATE_SCHEMA=true
+```
+
+Новая SQLite база может также быть создана миграцией:
+
+```bash
+cd backend
+source .venv/bin/activate
+alembic upgrade head
+```
+
+Существующую `backend/data/chess.db`, ранее созданную через `create_all()`, нельзя
+накатывать initial migration поверх таблиц. Сначала сделайте backup, затем dry-run
+и только после успешной проверки stamp:
+
+```bash
+cp data/chess.db data/chess.backup.db
+python scripts/adopt_existing_database.py
+python scripts/adopt_existing_database.py --apply
+```
+
+Stamp добавляет только Alembic revision и не переносит/не изменяет игровые данные.
+
+PostgreSQL поддерживается опционально через синхронный psycopg 3:
+
+```bash
+brew install postgresql@17
+brew services start postgresql@17
+```
+
+```sql
+CREATE USER chess_user WITH PASSWORD 'change-me';
+CREATE DATABASE chess_ai_teacher OWNER chess_user;
+```
+
+```bash
+cd backend
+source .venv/bin/activate
+cp .env.postgresql.example .env
+alembic upgrade head
+python run.py
+```
+
+Production-конфигурация использует:
+
+```env
+DATABASE_URL=postgresql+psycopg://chess_user:change-me@127.0.0.1:5432/chess_ai_teacher
+AUTO_CREATE_SCHEMA=false
+```
+
+Специальные символы в password должны быть URL-encoded. PostgreSQL migration
+создаёт только schema и не копирует данные из SQLite; перенос данных, если он
+понадобится, будет отдельным этапом. Startup не запускает `alembic upgrade`
+автоматически.
+
 ## Frontend setup
 
 ```bash

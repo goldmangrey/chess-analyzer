@@ -139,7 +139,7 @@ export type AnalyzeGameResponse = { game_id: number; status: "queued" | "already
 export type SystemStatus = {
   status: "ready" | "degraded";
   backend: "ready";
-  database: { status: "ready" | "unavailable"; path: string; writable: boolean; tables_ready: boolean };
+  database: { status: "ready" | "degraded" | "unavailable"; backend: "sqlite" | "postgresql"; path: string | null; writable: boolean; tables_ready: boolean; schema_ready: boolean; migration_revision: string | null };
   stockfish: { status: "ready" | "unavailable"; path: string; executable: boolean };
   chesscom: { configured: boolean; user_agent_configured: boolean };
 };

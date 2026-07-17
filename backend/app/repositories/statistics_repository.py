@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import case, func, select
+from sqlalchemy import Float, case, cast, func, select
 from sqlalchemy.orm import Session
 
 from app.models import (
@@ -169,10 +169,10 @@ def get_opening_metrics(
     total_cp_loss = func.sum(metrics.c.total_cp_loss)
     move_count = func.sum(metrics.c.move_count)
     weakness_score = (
-        losses * 100.0 / games_count
-        + blunders * 25.0 / games_count
-        + mistakes * 10.0 / games_count
-        + total_cp_loss / move_count / 10.0
+        cast(losses, Float) * 100.0 / cast(games_count, Float)
+        + cast(blunders, Float) * 25.0 / cast(games_count, Float)
+        + cast(mistakes, Float) * 10.0 / cast(games_count, Float)
+        + cast(total_cp_loss, Float) / cast(move_count, Float) / 10.0
     )
     statement = (
         select(

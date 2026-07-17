@@ -24,6 +24,8 @@ def create_app(
     init_database: Callable[[], None] = init_db,
 ) -> FastAPI:
     active_settings = settings or get_settings()
+    if init_database is init_db:
+        init_database = lambda: init_db(auto_create_schema=active_settings.auto_create_schema)
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):

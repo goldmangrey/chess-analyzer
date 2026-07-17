@@ -3,7 +3,7 @@ from pathlib import Path
 from sqlalchemy import Engine, inspect, text
 
 from app.config import BACKEND_DIR
-from app.database import normalize_database_url
+from app.database_url import normalize_database_url, resolve_database_url
 
 
 def test_sqlite_foreign_keys_are_enabled(test_engine: Engine) -> None:
@@ -20,7 +20,7 @@ def test_init_db_creates_only_expected_tables(test_engine: Engine) -> None:
 
 
 def test_relative_sqlite_path_is_resolved_from_backend() -> None:
-    normalized = normalize_database_url("sqlite:///./data/chess.db")
+    normalized = resolve_database_url("sqlite:///./data/chess.db")
 
     assert normalized == f"sqlite:///{BACKEND_DIR / 'data/chess.db'}"
 
