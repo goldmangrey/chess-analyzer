@@ -3,6 +3,19 @@
 This deployment creates paid Google Cloud resources. Every provisioning script
 is a dry-run unless `--apply` is supplied. Review the printed commands first.
 
+The supported production entrypoint is now exclusively:
+
+```bash
+./scripts/gcp/production-deploy.sh --preflight
+./scripts/gcp/production-deploy.sh --apply
+```
+
+It computes immutable backend/frontend image references and all Cloud Run URLs,
+runs a read-only preflight before mutation, records completed steps in the
+ignored `deploy/.deployment-state`, and supports recovery with
+`--resume-from STEP`. The other files under `scripts/gcp/` are internal resource
+implementations and should not be orchestrated manually during normal deploys.
+
 ## Architecture and identities
 
 - `chess-ai-frontend`: public Cloud Run Next.js service;
@@ -41,9 +54,17 @@ source deploy/gcp.env
 ```
 
 Never place passwords in `deploy/gcp.env`. Scripts read secret values from the
-current process environment and do not print them.
+current process environment and do not print them. Configuration precedence is
+the explicit current environment, then the ignored `deploy/gcp.env`, then safe
+defaults. An exported value is never replaced by a template value such as
+`your-project-id`.
 
 ## Manual provisioning
+
+The commands below document the underlying resources for troubleshooting. For
+normal production deployment, use `production-deploy.sh`; operators do not set
+`IMAGE_TAG`, `BACKEND_IMAGE`, `WORKER_URL`, `BACKEND_URL`, `SYNC_SERVICE_URL`, or
+`FRONTEND_URL` themselves.
 
 Run each command without `--apply` first, then repeat it with `--apply` after
 review. The Cloud SQL command creates a billable instance.
@@ -66,8 +87,14 @@ Cloud SQL keeps a public endpoint for the managed Cloud SQL attachment, but no
 authorized network such as `0.0.0.0/0` is added. Cloud Run connects through
 `--add-cloudsql-instances` and the Unix socket
 `/cloudsql/PROJECT:REGION:INSTANCE`. The default `db-f1-micro`, single-zone
-configuration is intended for a low-cost pet project. Storage auto-increase and
-backups are enabled; regional HA costs more and is not enabled by default.
+configuration is intended for a low-cost pet project. This shared-core tier
+requires the explicitly selected `enterprise` edition. Enterprise Plus is
+significantly more expensive and is not used by default. Operators can override
+`CLOUD_SQL_EDITION`, `CLOUD_SQL_TIER`, `CLOUD_SQL_DATABASE_VERSION`, and
+`CLOUD_SQL_STORAGE_SIZE_GB` through environment configuration. Storage
+auto-increase and backups are enabled; regional HA costs more and is not enabled
+by default. Cloud SQL is a persistent billable resource, so inspect the dry-run
+before using `--apply`.
 
 Build the backend with an immutable Git SHA tag:
 
@@ -154,6 +181,12 @@ with `smoke-test-scheduler.sh`; an explicit manual run requires
 ./scripts/gcp/deploy-all.sh
 ./scripts/gcp/deploy-all.sh --apply
 ```
+
+`deploy-all.sh` is retained only as a legacy/internal implementation. New
+deployments must use `production-deploy.sh`, whose preflight is mandatory and
+whose resume state is persistent. Existing Secret Manager secrets are not given
+new versions unless `ROTATE_SECRETS=true`; rotation values must come from the
+current environment and are never printed.
 
 ## Database and secrets
 

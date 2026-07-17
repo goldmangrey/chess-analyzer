@@ -50,6 +50,7 @@ frontend/.env.*.local
 npm-debug.log*
 backups/
 deploy/gcp.env
+deploy/.deployment-state
 *.pem
 *.key
 service-account*.json

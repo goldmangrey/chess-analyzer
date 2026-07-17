@@ -221,6 +221,29 @@ polling каждые 3–5 минут и при необходимости ст�
 Cloud Tasks. Manual refresh остаётся доступным, а local development сохраняет
 browser-driven fallback. Chess.com webhook не используется.
 
+Cloud SQL создаёт постоянный платный ресурс. Low-cost shared-core tier
+`db-f1-micro` требует `CLOUD_SQL_EDITION=enterprise`; более дорогой Enterprise
+Plus по умолчанию не используется. Сначала запускайте `deploy-all.sh` без
+`--apply` и проверяйте dry-run. Tier и edition можно переопределить через env;
+явно экспортированные переменные имеют приоритет над `deploy/gcp.env`, а файл —
+над безопасными defaults.
+
+Единственный рекомендуемый production entrypoint:
+
+```bash
+cp deploy/gcp.env.example deploy/gcp.env
+# заполнить ignored env без secrets
+./scripts/gcp/production-deploy.sh --preflight
+./scripts/gcp/production-deploy.sh --apply
+```
+
+Orchestrator сам вычисляет полные Artifact Registry image references, получает
+Cloud Run URLs, обновляет CORS и сохраняет resume state в ignored
+`deploy/.deployment-state`. Старые отдельные GCP scripts считаются внутренними
+implementation details. При ошибке deployment можно продолжить через
+`--resume-from STEP`; существующие secrets не ротируются без явного
+`ROTATE_SECRETS=true`.
+
 ## REST API
 
 - `GET /health` — лёгкая проверка без SQLite/Stockfish probe;

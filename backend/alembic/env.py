@@ -1,9 +1,10 @@
 from logging.config import fileConfig
+import os
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from app.config import get_settings
+from app.config import compose_cloud_sql_database_url, get_settings
 from app.database import Base
 from app.database_url import database_backend, resolve_database_url
 from app import models  # noqa: F401
@@ -12,8 +13,18 @@ from app import models  # noqa: F401
 config = context.config
 if config.config_file_name:
     fileConfig(config.config_file_name, disable_existing_loggers=False)
-settings = get_settings()
-normalized_url = resolve_database_url(config.attributes.get("database_url", settings.database_url))
+configured_url = config.attributes.get("database_url") or os.getenv("DATABASE_URL", "").strip()
+if not configured_url and os.getenv("DATABASE_HOST", "").strip():
+    configured_url = compose_cloud_sql_database_url(
+        host=os.environ["DATABASE_HOST"],
+        port=int(os.getenv("DATABASE_PORT", "5432")),
+        name=os.environ["DATABASE_NAME"],
+        user=os.environ["DATABASE_USER"],
+        password=os.environ["DATABASE_PASSWORD"],
+    )
+if not configured_url:
+    configured_url = get_settings().database_url
+normalized_url = resolve_database_url(configured_url)
 config.set_main_option("sqlalchemy.url", normalized_url.replace("%", "%%"))
 target_metadata = Base.metadata
 
