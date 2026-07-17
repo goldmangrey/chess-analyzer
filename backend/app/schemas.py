@@ -325,6 +325,7 @@ class AnalysisQueueStatus(ApiSchema):
 class SystemStatusResponse(ApiSchema):
     status: str
     backend: str
+    app_environment: str
     database: DatabaseStatus
     stockfish: StockfishStatus
     chesscom: ChessComStatus

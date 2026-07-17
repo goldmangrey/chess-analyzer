@@ -33,6 +33,8 @@ def create_app(
         init_database()
         logger.info("Database schema initialized")
         yield
+        from app.database import engine
+        engine.dispose()
 
     application = FastAPI(
         title="Chess AI Teacher API",
@@ -41,9 +43,9 @@ def create_app(
     )
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=[active_settings.frontend_origin],
+        allow_origins=list(active_settings.allowed_frontend_origins),
         allow_credentials=False,
-        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
         allow_headers=["Content-Type", "Accept"],
     )
     application.include_router(import_games.router)

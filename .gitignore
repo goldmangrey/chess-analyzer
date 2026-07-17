@@ -49,3 +49,8 @@ frontend/.env.*.local
 *.log
 npm-debug.log*
 backups/
+deploy/gcp.env
+*.pem
+*.key
+service-account*.json
+cloud-sql-proxy

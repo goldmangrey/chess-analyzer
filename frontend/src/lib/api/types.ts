@@ -143,6 +143,7 @@ export type AnalyzeGameResponse = {
 export type SystemStatus = {
   status: "ready" | "degraded";
   backend: "ready";
+  app_environment: string;
   database: { status: "ready" | "degraded" | "unavailable"; backend: "sqlite" | "postgresql"; path: string | null; writable: boolean; tables_ready: boolean; schema_ready: boolean; migration_revision: string | null };
   stockfish: { status: "ready" | "unavailable"; path: string; executable: boolean };
   chesscom: { configured: boolean; user_agent_configured: boolean };

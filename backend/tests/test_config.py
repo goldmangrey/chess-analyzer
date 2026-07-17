@@ -7,6 +7,7 @@ from app.config import Settings, get_settings
 ENVIRONMENT_VARIABLES = (
     "APP_ENV",
     "DATABASE_URL",
+    "DATABASE_HOST", "DATABASE_PORT", "DATABASE_NAME", "DATABASE_USER", "DATABASE_PASSWORD",
     "AUTO_CREATE_SCHEMA",
     "DB_POOL_SIZE",
     "DB_MAX_OVERFLOW",
@@ -24,6 +25,7 @@ ENVIRONMENT_VARIABLES = (
     "STOCKFISH_MOVE_TIME_MS",
     "STOCKFISH_PV_LENGTH",
     "FRONTEND_ORIGIN",
+    "FRONTEND_ORIGINS",
 )
 
 
@@ -46,6 +48,11 @@ def test_default_values() -> None:
     assert settings.model_dump() == {
         "app_env": "development",
         "database_url": "sqlite:///./data/chess.db",
+        "database_host": "",
+        "database_port": 5432,
+        "database_name": "",
+        "database_user": "",
+        "database_password": "",
         "auto_create_schema": True,
         "db_pool_size": 5,
         "db_max_overflow": 5,
@@ -71,6 +78,7 @@ def test_default_values() -> None:
         "stockfish_move_time_ms": 250,
         "stockfish_pv_length": 6,
         "frontend_origin": "http://localhost:3000",
+        "frontend_origins": "",
     }
 
 

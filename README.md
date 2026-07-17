@@ -205,6 +205,20 @@ OIDC/IAM deployment будут настроены на следующем эта
 остановке backend. Страница открытой анализируемой партии обновляется с
 ограниченным интервалом; бесконечного polling нет.
 
+## Google Cloud deployment
+
+Production foundation uses a public Next.js Cloud Run frontend, a public API,
+a separate private worker running the same backend image, Cloud Tasks with OIDC,
+Cloud SQL PostgreSQL, Secret Manager, Artifact Registry, and an Alembic Cloud Run
+Job. The worker image contains Stockfish and one task analyzes one game. Cloud
+SQL persists data independently of Cloud Run restarts.
+
+Exact dry-run-first provisioning and cleanup commands are in
+[`docs/deployment/google-cloud.md`](docs/deployment/google-cloud.md). No GCP
+resource is created by application startup. Server-side scheduled Chess.com sync
+is not included yet; manual refresh and the browser hook remain active until
+Stage 18.
+
 ## REST API
 
 - `GET /health` — лёгкая проверка без SQLite/Stockfish probe;

@@ -94,6 +94,7 @@ def get_system_status(settings: Settings, engine: Engine) -> SystemStatusRespons
     return SystemStatusResponse(
         status="ready" if ready else "degraded",
         backend="ready",
+        app_environment=settings.app_env,
         database=database,
         stockfish=stockfish,
         chesscom=chesscom,
