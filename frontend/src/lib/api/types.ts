@@ -122,3 +122,16 @@ export type GamesListResponse = {
   returned_count: number;
   total: number;
 };
+
+export type GamesSort = "newest" | "oldest" | "most_blunders" | "highest_cp_loss";
+
+export type GamesQuery = {
+  limit?: number;
+  offset?: number;
+  result?: GameResult;
+  opening?: string;
+  analysisStatus?: AnalysisStatus;
+  sort?: GamesSort;
+};
+
+export type AnalyzeGameResponse = { game_id: number; status: "queued" };

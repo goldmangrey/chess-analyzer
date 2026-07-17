@@ -42,7 +42,7 @@ function ImportForm() {
   }
 
   return (
-    <BentoCard as="section" className="h-full p-6 sm:p-8">
+    <BentoCard as="section" id="import" className="h-full scroll-mt-8 p-6 sm:p-8">
       <p className="text-xs font-bold uppercase tracking-[0.18em] text-forest-light">Chess.com</p>
       <h2 className="mt-3 text-2xl font-semibold tracking-[-0.04em]">Импорт партий</h2>
       <form className="mt-6 space-y-5" onSubmit={submit}>

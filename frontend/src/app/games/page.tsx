@@ -1,23 +1,36 @@
-import { History } from "lucide-react";
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { AppShell, PageHeading } from "@/components/layout";
-import { EmptyState } from "@/components/ui";
+import { GamesError, GamesPage } from "@/components/games";
+import { AppShell } from "@/components/layout";
+import { fetchGames } from "@/lib/api";
+import { gamesStateToSearchParams, parseGamesUrlState, toGamesApiQuery } from "@/lib/games-query";
 
-export default function GamesPage() {
-  return (
-    <AppShell activeSection="games">
-      <PageHeading
-        eyebrow="Games"
-        title="Партии"
-        description="Здесь появится история импортированных партий и переход к подробному анализу."
-      />
-      <div className="mt-10">
-        <EmptyState
-          icon={<History aria-hidden="true" size={22} />}
-          title="История партий будет реализована на следующем этапе"
-          description="Пока это безопасный placeholder без API-запросов и демонстрационных данных."
-        />
-      </div>
-    </AppShell>
-  );
+export const metadata: Metadata = { title: "Chess AI Teacher — Партии" };
+export const dynamic = "force-dynamic";
+
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+async function loadGames(searchParams: SearchParams) {
+  const state = parseGamesUrlState(await searchParams);
+  try {
+    return { available: true, state, data: await fetchGames(toGamesApiQuery(state)) } as const;
+  } catch {
+    return { available: false, state, data: null } as const;
+  }
+}
+
+export default async function GamesRoute({ searchParams }: { searchParams: SearchParams }) {
+  const result = await loadGames(searchParams);
+  if (!result.available) {
+    return <AppShell activeSection="games" engineStatus="unavailable"><GamesError /></AppShell>;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(result.data.total / result.data.limit));
+  if (result.data.total > 0 && result.state.page > totalPages) {
+    const params = gamesStateToSearchParams({ ...result.state, page: totalPages });
+    redirect(params.size ? `/games?${params}` : "/games");
+  }
+
+  return <AppShell activeSection="games" engineStatus="ready"><GamesPage data={result.data} state={result.state} /></AppShell>;
 }

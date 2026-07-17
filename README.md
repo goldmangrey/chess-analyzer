@@ -135,8 +135,10 @@ NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
 ```
 
 The backend must be running for live Dashboard data and import. The `/games`
-route remains a placeholder; the Games list and detailed Game Analysis
-interfaces are not implemented yet.
+route provides the real game history with URL-backed filters, backend sorting,
+server pagination, desktop table and responsive cards. Analysis and re-analysis
+can be queued from the list and continue through FastAPI BackgroundTasks. The
+detailed Game Analysis interface is not implemented yet.
 
 From the repository root:
 

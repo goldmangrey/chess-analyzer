@@ -15,6 +15,7 @@ export type BentoCardProps = {
   className?: string;
   tone?: BentoCardTone;
   as?: "div" | "section" | "article";
+  id?: string;
 };
 
 const toneClasses: Record<BentoCardTone, string> = {
@@ -31,8 +32,9 @@ export function BentoCard({
   className,
   tone = "default",
   as: Component = "div",
+  id,
 }: BentoCardProps) {
   return (
-    <Component className={cn(toneClasses[tone], className)}>{children}</Component>
+    <Component id={id} className={cn(toneClasses[tone], className)}>{children}</Component>
   );
 }

@@ -6,7 +6,7 @@ export function analysisStatusLabel(status: AnalysisStatus): string {
 }
 
 export function analysisStatusTone(status: AnalysisStatus): StatusPillTone {
-  return { pending: "info", analyzing: "warning", completed: "success", failed: "danger" }[status] as StatusPillTone;
+  return { pending: "neutral", analyzing: "info", completed: "success", failed: "danger" }[status] as StatusPillTone;
 }
 
 export function gameResultLabel(result: GameResult): string {
