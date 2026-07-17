@@ -92,3 +92,86 @@ class GameListItem(ReadSchema):
 class GameRead(GameListItem):
     pgn: str
     move_analyses: list[MoveAnalysisRead] = Field(default_factory=list)
+
+
+class StatisticsSchema(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class StatsSummary(StatisticsSchema):
+    total_games: int
+    analyzed_games: int
+    wins: int
+    draws: int
+    losses: int
+    average_cp_loss: float | None
+    mistakes_total: int
+    blunders_total: int
+    mistakes_per_game: float | None
+    blunders_per_game: float | None
+    blunder_free_games: int
+    blunder_free_percentage: float | None
+
+
+class StatsPeriodComparison(StatisticsSchema):
+    recent_games_count: int
+    previous_games_count: int
+    recent_average_cp_loss: float | None
+    previous_average_cp_loss: float | None
+    average_cp_loss_change: float | None
+    recent_mistakes_per_game: float | None
+    previous_mistakes_per_game: float | None
+    mistakes_per_game_change: float | None
+    recent_blunders_per_game: float | None
+    previous_blunders_per_game: float | None
+    blunders_per_game_change: float | None
+
+
+class OpeningWeakness(StatisticsSchema):
+    opening_code: str | None
+    opening_name: str | None
+    games_count: int
+    wins: int
+    draws: int
+    losses: int
+    loss_rate: float
+    average_cp_loss: float
+    mistakes_per_game: float
+    blunders_per_game: float
+    weakness_score: float
+
+
+class TrendPoint(StatisticsSchema):
+    game_id: int
+    played_at: datetime | None
+    opponent: str
+    result: GameResult
+    user_color: Color
+    opening_code: str | None
+    opening_name: str | None
+    average_cp_loss: float
+    mistakes: int
+    blunders: int
+
+
+class RecentGameStats(StatisticsSchema):
+    game_id: int
+    played_at: datetime | None
+    opponent_username: str
+    user_color: Color
+    result: GameResult
+    opening_code: str | None
+    opening_name: str | None
+    time_control: str | None
+    analysis_status: AnalysisStatus
+    average_cp_loss: float | None
+    mistakes: int
+    blunders: int
+
+
+class StatisticsDashboard(StatisticsSchema):
+    summary: StatsSummary
+    comparison: StatsPeriodComparison
+    weakest_openings: tuple[OpeningWeakness, ...]
+    trends: tuple[TrendPoint, ...]
+    recent_games: tuple[RecentGameStats, ...]

@@ -72,6 +72,11 @@ loss, and classification. Later personal statistics will use only rows where
 `is_user_move=true`. No AI API is used. REST and frontend integration are not
 implemented yet.
 
+Backend statistics now provides real summaries, period comparisons, weakest
+openings, trends, and recent-game metrics. Every personal move metric explicitly
+excludes opponent moves through `is_user_move=true`. Accuracy, Elo estimates,
+AI explanations, REST endpoints, and the Dashboard UI are not implemented.
+
 From the repository root:
 
 ```bash
