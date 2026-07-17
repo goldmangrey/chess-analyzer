@@ -42,7 +42,35 @@ python -m scripts.import_games --username Yeskendir --limit 10
 ```
 
 The first real CLI run initializes `backend/data/chess.db`. Newly imported games
-are stored with `pending` analysis status. Stockfish analysis is not implemented.
+are stored with `pending` analysis status, ready for a separate local analysis run.
+
+## Local Stockfish analysis
+
+Install the native engine on macOS and find its path:
+
+```bash
+brew install stockfish
+which stockfish
+```
+
+Set the discovered path in `backend/.env`, for example:
+
+```env
+STOCKFISH_PATH=/opt/homebrew/bin/stockfish
+```
+
+Analyze pending games sequentially:
+
+```bash
+cd backend
+source .venv/bin/activate
+python -m scripts.analyze_games --pending
+```
+
+Every ply is analyzed locally for both players and stored with evaluations, CP
+loss, and classification. Later personal statistics will use only rows where
+`is_user_move=true`. No AI API is used. REST and frontend integration are not
+implemented yet.
 
 From the repository root:
 
