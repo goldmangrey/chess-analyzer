@@ -10,6 +10,7 @@ export function SystemDiagnosticCard({ status }: { status: SystemStatus }) {
     !status.chesscom.configured ? "Настройте CHESS_USERNAME в backend/.env." : null,
     !status.chesscom.user_agent_configured ? "Настройте CHESSCOM_USER_AGENT в backend/.env." : null,
     status.analysis_queue.status !== "ready" ? "Очередь анализа не настроена. Проверьте Cloud Tasks параметры в backend/.env." : null,
+    status.scheduled_sync.enabled && status.scheduled_sync.status !== "ready" ? "Серверная синхронизация включена, но настроена не полностью." : null,
   ].filter((issue): issue is string => issue !== null);
 
   if (issues.length === 0) return null;

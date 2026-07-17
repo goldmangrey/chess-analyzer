@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { syncChessCom } from "@/lib/api";
 import { useToast } from "@/components/ui";
+import { SERVER_SYNC_ENABLED } from "@/lib/env";
 
 export function useChessComSync({ enabled, intervalMs = 180_000 }: { enabled: boolean; intervalMs?: number }) {
   const router = useRouter();
@@ -13,7 +14,7 @@ export function useChessComSync({ enabled, intervalMs = 180_000 }: { enabled: bo
   const warned = useRef(false);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || SERVER_SYNC_ENABLED) return;
     const synchronize = async () => {
       if (document.visibilityState !== "visible" || running.current) return;
       running.current = true;

@@ -4,6 +4,8 @@ steps:
       - build
       - --build-arg
       - NEXT_PUBLIC_API_BASE_URL=${_BACKEND_URL}
+      - --build-arg
+      - NEXT_PUBLIC_SERVER_SYNC_ENABLED=${_SERVER_SYNC_ENABLED}
       - -t
       - ${_IMAGE}
       - frontend

@@ -8,7 +8,9 @@ is a dry-run unless `--apply` is supplied. Review the printed commands first.
 - `chess-ai-frontend`: public Cloud Run Next.js service;
 - `chess-ai-backend`: public product API;
 - `chess-ai-worker`: private Cloud Run service using the backend image;
+- `chess-ai-sync`: private scheduled-sync service using the same image;
 - `chess-analysis`: Cloud Tasks queue sending OIDC requests to the worker;
+- `chess-sync`: Cloud Scheduler OIDC HTTP job;
 - `chess-ai-postgres`: Cloud SQL PostgreSQL 17 instance;
 - `chess-ai-migrate`: single-task Cloud Run migration job.
 
@@ -18,6 +20,9 @@ has only Cloud SQL Client and Secret Accessor. The tasks-invoker account receive
 `roles/run.invoker` on the worker. The Cloud Tasks service agent receives
 `roles/iam.serviceAccountTokenCreator` on that invoker identity. No JSON keys,
 Owner, or Editor roles are created.
+
+The separate `chess-scheduler` account receives only `roles/run.invoker` on the
+private sync service. It receives no SQL, Secret Manager, or Tasks roles.
 
 The public API URL is baked into the frontend image through
 `NEXT_PUBLIC_API_BASE_URL`; rebuild the image whenever that URL changes.
@@ -52,6 +57,7 @@ review. The Cloud SQL command creates a billable instance.
 export DATABASE_PASSWORD='replace-me'
 export CHESSCOM_USER_AGENT='ChessAITeacher/1.0 (contact: you@example.com)'
 export ANALYSIS_WORKER_SHARED_SECRET='long-random-value'
+export SCHEDULED_SYNC_SHARED_SECRET='another-long-random-value'
 ./scripts/gcp/create-secrets.sh --apply
 ./scripts/gcp/create-cloud-sql.sh --apply
 ```
@@ -103,6 +109,22 @@ export BACKEND_URL="$(gcloud run services describe "$BACKEND_SERVICE" \
   --format='value(status.url)')"
 ```
 
+Deploy the private sync service before creating its Scheduler target:
+
+```bash
+./scripts/gcp/deploy-sync-service.sh --apply
+export SYNC_SERVICE_URL="$(gcloud run services describe "$SYNC_SERVICE" \
+  --project "$GCP_PROJECT_ID" --region "$GCP_REGION" \
+  --format='value(status.url)')"
+./scripts/gcp/create-scheduler-job.sh --apply
+```
+
+The default schedule is `*/3 * * * *` in UTC; `*/5 * * * *` is a cheaper
+pet-project option. Scheduler sends an OIDC token with audience equal to the
+service origin and POSTs `{ "schema_version": 1 }`. IAM is primary
+authentication. The shared-secret header is defence-in-depth; Scheduler stores
+custom headers in job configuration, so access to job metadata must be limited.
+
 Build and deploy the frontend, then replace the temporary CORS origin:
 
 ```bash
@@ -121,6 +143,10 @@ The smoke test checks health, diagnostics, settings, frontend HTML, CORS, and
 that an unauthenticated worker request is rejected. It never starts sync or
 Stockfish analysis.
 
+The normal smoke test never invokes Scheduler. Configuration can be inspected
+with `smoke-test-scheduler.sh`; an explicit manual run requires
+`run-scheduler-now.sh --apply`.
+
 `deploy-all.sh` orchestrates the same order. It remains a dry-run without
 `--apply`:
 
@@ -131,8 +157,9 @@ Stockfish analysis.
 
 ## Database and secrets
 
-Production containers receive `DATABASE_PASSWORD`, `CHESSCOM_USER_AGENT`, and
-`ANALYSIS_WORKER_SHARED_SECRET` from Secret Manager. Non-secret DB components
+Production containers receive `DATABASE_PASSWORD`, `CHESSCOM_USER_AGENT`,
+`ANALYSIS_WORKER_SHARED_SECRET`, and `SCHEDULED_SYNC_SHARED_SECRET` from Secret
+Manager. Non-secret DB components
 are regular environment variables. If `DATABASE_URL` is explicitly set it has
 priority; otherwise the backend creates this URL internally, with encoded
 credentials:
@@ -154,13 +181,31 @@ permanently destroys the production database.
 gcloud run services delete "$FRONTEND_SERVICE" --region "$GCP_REGION"
 gcloud run services delete "$BACKEND_SERVICE" --region "$GCP_REGION"
 gcloud run services delete "$WORKER_SERVICE" --region "$GCP_REGION"
+gcloud run services delete "$SYNC_SERVICE" --region "$GCP_REGION"
 gcloud run jobs delete "$MIGRATION_JOB" --region "$GCP_REGION"
 gcloud tasks queues delete "$CLOUD_TASKS_QUEUE" --location "$GCP_REGION"
+gcloud scheduler jobs delete "$SCHEDULER_JOB" --location "$GCP_REGION"
 # DANGER: permanent database deletion
 gcloud sql instances delete "$CLOUD_SQL_INSTANCE"
 gcloud artifacts repositories delete "$ARTIFACT_REPOSITORY" --location "$GCP_REGION"
 ```
 
 Delete secrets and service accounts only after confirming that no other service
-uses them. Cloud Scheduler and server-side automatic sync are intentionally not
-part of this stage; sync remains manual/client-driven.
+uses them.
+
+## Scheduled sync troubleshooting
+
+- **401/403:** verify OIDC audience, scheduler account, `roles/run.invoker`, and
+  shared-secret header.
+- **Disabled:** enable `auto_sync_enabled`; manual refresh remains independent.
+- **Username missing:** configure Chess.com username from Dashboard first.
+- **Chess.com timeout/5xx:** inspect private sync service logs; Scheduler retries
+  transient failures.
+- **Success with imported=0:** no new published game exists or dedupe found it.
+- **No report task:** inspect analysis queue diagnostics and
+  `auto_analyze_latest`.
+
+Chess.com PubAPI webhooks are not used. Discovery is polling-based, so delay is
+the Scheduler interval plus Chess.com publication latency. Cloud Run, Cloud SQL,
+Scheduler and Tasks can incur costs. Production frontend builds set
+`NEXT_PUBLIC_SERVER_SYNC_ENABLED=true`; local builds default it to `false`.

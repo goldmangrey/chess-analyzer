@@ -322,6 +322,12 @@ class AnalysisQueueStatus(ApiSchema):
     worker_url_host: str | None = None
 
 
+class ScheduledSyncStatus(ApiSchema):
+    enabled: bool
+    mode: Literal["server", "browser"]
+    status: Literal["ready", "disabled", "degraded"]
+
+
 class SystemStatusResponse(ApiSchema):
     status: str
     backend: str
@@ -330,6 +336,7 @@ class SystemStatusResponse(ApiSchema):
     stockfish: StockfishStatus
     chesscom: ChessComStatus
     analysis_queue: AnalysisQueueStatus
+    scheduled_sync: ScheduledSyncStatus
 
 
 class AppSettingsResponse(ReadSchema):
@@ -393,3 +400,20 @@ class ChessComSyncResponse(ApiSchema):
     analysis_queued_game_id: int | None
     started_at: datetime
     completed_at: datetime
+
+
+class ScheduledSyncRequest(ApiSchema):
+    schema_version: Literal[1] = 1
+
+
+class ScheduledSyncResponse(ApiSchema):
+    status: Literal["completed", "already_running", "disabled"]
+    username: str | None = None
+    examined: int = 0
+    imported: int = 0
+    duplicates: int = 0
+    invalid: int = 0
+    latest_game_id: int | None = None
+    analysis_queued_game_id: int | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None

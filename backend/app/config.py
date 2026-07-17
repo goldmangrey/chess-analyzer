@@ -59,6 +59,8 @@ class Settings(BaseSettings):
     cloud_tasks_oidc_audience: str = Field(default="", validation_alias="CLOUD_TASKS_OIDC_AUDIENCE")
     cloud_tasks_task_deadline_seconds: int = Field(default=1800, ge=60, le=1800, validation_alias="CLOUD_TASKS_TASK_DEADLINE_SECONDS")
     analysis_worker_shared_secret: str = Field(default="", validation_alias="ANALYSIS_WORKER_SHARED_SECRET")
+    scheduled_sync_enabled: bool = Field(default=False, validation_alias="SCHEDULED_SYNC_ENABLED")
+    scheduled_sync_shared_secret: str = Field(default="", validation_alias="SCHEDULED_SYNC_SHARED_SECRET", repr=False)
     chess_username: str = Field(
         default="Yeskendir",
         validation_alias="CHESS_USERNAME",
@@ -133,6 +135,8 @@ class Settings(BaseSettings):
                 raise ValueError("Production requires AUTO_CREATE_SCHEMA=false")
             if self.analysis_queue_backend is not AnalysisQueueBackend.CLOUD_TASKS:
                 raise ValueError("Production requires ANALYSIS_QUEUE_BACKEND=cloud_tasks")
+            if self.scheduled_sync_enabled and not self.scheduled_sync_shared_secret.strip():
+                raise ValueError("Production scheduled sync requires SCHEDULED_SYNC_SHARED_SECRET")
         return self
 
     @property

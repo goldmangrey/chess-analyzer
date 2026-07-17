@@ -215,9 +215,11 @@ SQL persists data independently of Cloud Run restarts.
 
 Exact dry-run-first provisioning and cleanup commands are in
 [`docs/deployment/google-cloud.md`](docs/deployment/google-cloud.md). No GCP
-resource is created by application startup. Server-side scheduled Chess.com sync
-is not included yet; manual refresh and the browser hook remain active until
-Stage 18.
+resource is created by application startup. В production новые завершённые
+партии обнаруживает Cloud Scheduler: private sync service выполняет incremental
+polling каждые 3–5 минут и при необходимости ставит только одну latest game в
+Cloud Tasks. Manual refresh остаётся доступным, а local development сохраняет
+browser-driven fallback. Chess.com webhook не используется.
 
 ## REST API
 

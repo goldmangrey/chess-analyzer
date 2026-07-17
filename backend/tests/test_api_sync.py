@@ -89,15 +89,17 @@ def test_incremental_saved_username_duplicates_and_auto_analyze_off(api_app, api
     assert client.requested_archives == [*client.archives[:2], *client.archives[:2]]
 
 
-def test_sync_requires_username_and_rejects_concurrency(api_client) -> None:
+def test_sync_requires_username_and_rejects_concurrency(api_client, monkeypatch) -> None:
     assert api_client.post("/api/sync/chess-com", json={}).status_code == 422
-    sync_api._sync_lock.acquire()
-    try:
-        response = api_client.post("/api/sync/chess-com", json={"username": "Player"})
-        assert response.status_code == 409
-        assert response.json()["error"] == "sync_already_running"
-    finally:
-        sync_api._sync_lock.release()
+    from contextlib import contextmanager
+    class BusyLock:
+        def __init__(self, _engine): pass
+        @contextmanager
+        def acquire(self): yield False
+    monkeypatch.setattr(sync_api, "SyncExecutionLock", BusyLock)
+    response = api_client.post("/api/sync/chess-com", json={"username": "Player"})
+    assert response.status_code == 409
+    assert response.json()["error"] == "sync_already_running"
 
 
 def test_failure_records_status_and_releases_lock(api_app, api_client) -> None:

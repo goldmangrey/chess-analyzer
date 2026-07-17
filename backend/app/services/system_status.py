@@ -11,6 +11,7 @@ from app.database_url import database_backend, resolve_database_url
 from app.schemas import (
     ChessComStatus,
     AnalysisQueueStatus,
+    ScheduledSyncStatus,
     DatabaseStatus,
     StockfishStatus,
     SystemStatusResponse,
@@ -84,12 +85,23 @@ def get_system_status(settings: Settings, engine: Engine) -> SystemStatusRespons
         queue_name=settings.cloud_tasks_queue if cloud else None,
         worker_url_host=worker_host if cloud else None,
     )
+    scheduled_ready = (
+        settings.scheduled_sync_enabled
+        and settings.analysis_queue_backend.value == "cloud_tasks"
+        and bool(settings.scheduled_sync_shared_secret)
+    )
+    scheduled_sync = ScheduledSyncStatus(
+        enabled=settings.scheduled_sync_enabled,
+        mode="server" if settings.scheduled_sync_enabled else "browser",
+        status=("ready" if scheduled_ready else "degraded") if settings.scheduled_sync_enabled else "disabled",
+    )
     ready = (
         database.status == "ready"
         and stockfish.status == "ready"
         and chesscom.configured
         and chesscom.user_agent_configured
         and analysis_queue.status == "ready"
+        and (not scheduled_sync.enabled or scheduled_sync.status == "ready")
     )
     return SystemStatusResponse(
         status="ready" if ready else "degraded",
@@ -99,4 +111,5 @@ def get_system_status(settings: Settings, engine: Engine) -> SystemStatusRespons
         stockfish=stockfish,
         chesscom=chesscom,
         analysis_queue=analysis_queue,
+        scheduled_sync=scheduled_sync,
     )

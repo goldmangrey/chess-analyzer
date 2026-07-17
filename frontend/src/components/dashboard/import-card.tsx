@@ -9,6 +9,7 @@ import { useChessComSync } from "@/hooks/use-chesscom-sync";
 import { syncChessCom, updateAppSettings } from "@/lib/api";
 import type { AppSettings } from "@/lib/api/types";
 import { formatDateTime } from "@/lib/format";
+import { SERVER_SYNC_ENABLED } from "@/lib/env";
 
 const monthOptions = [3, 6, 12].map((value) => ({ value: String(value), label: `${value} месяцев` }));
 
@@ -94,7 +95,7 @@ function ChessComCard({ settings }: { settings: AppSettings }) {
         <summary className="cursor-pointer font-semibold text-forest">Изменить настройки</summary>
         <div className="mt-4 space-y-3"><Input label="Chess.com username" value={username} onChange={(event) => setUsername(event.target.value)} disabled={loading} /><p className="text-xs leading-5 text-text-muted">При смене username существующая локальная история не удаляется.</p><Button type="button" variant="secondary" size="sm" loading={loading} onClick={saveUsername}>Сохранить username</Button></div>
       </details>
-      {!autoSync ? <p className="mt-4 flex items-center gap-2 text-xs text-text-muted"><Unplug size={14} /> Автообновление выключено</p> : <p className="mt-4 text-xs text-text-muted">Проверяем новые партии каждые 3 минуты, пока вкладка открыта.</p>}
+      {!autoSync ? <p className="mt-4 flex items-center gap-2 text-xs text-text-muted"><Unplug size={14} /> Автообновление выключено</p> : <p className="mt-4 text-xs text-text-muted">{SERVER_SYNC_ENABLED ? "Новые партии проверяются автоматически каждые несколько минут." : "Автосинхронизация работает, пока открыт сайт."}</p>}
     </BentoCard>
   );
 }

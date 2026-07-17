@@ -154,6 +154,11 @@ export type SystemStatus = {
     queue_name: string | null;
     worker_url_host: string | null;
   };
+  scheduled_sync: {
+    enabled: boolean;
+    mode: "server" | "browser";
+    status: "ready" | "disabled" | "degraded";
+  };
 };
 
 export type SyncStatus = "never" | "running" | "completed" | "failed";

@@ -16,6 +16,7 @@ ENVIRONMENT_VARIABLES = (
     "ANALYSIS_QUEUE_BACKEND", "GCP_PROJECT_ID", "GCP_REGION", "CLOUD_TASKS_QUEUE",
     "ANALYSIS_WORKER_URL", "CLOUD_TASKS_SERVICE_ACCOUNT_EMAIL", "CLOUD_TASKS_OIDC_AUDIENCE",
     "CLOUD_TASKS_TASK_DEADLINE_SECONDS", "ANALYSIS_WORKER_SHARED_SECRET",
+    "SCHEDULED_SYNC_ENABLED", "SCHEDULED_SYNC_SHARED_SECRET",
     "CHESS_USERNAME",
     "CHESSCOM_USER_AGENT",
     "IMPORT_GAMES_LIMIT",
@@ -67,6 +68,8 @@ def test_default_values() -> None:
         "cloud_tasks_oidc_audience": "",
         "cloud_tasks_task_deadline_seconds": 1800,
         "analysis_worker_shared_secret": "",
+        "scheduled_sync_enabled": False,
+        "scheduled_sync_shared_secret": "",
         "chess_username": "Yeskendir",
         "chesscom_user_agent": (
             "ChessAITeacher/1.0 (contact: github.com/username)"

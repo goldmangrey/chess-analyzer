@@ -21,6 +21,16 @@ def test_valid_production_runtime_and_worker_normalization():
     assert settings.analysis_worker_audience == "https://worker.example"
 
 
+def test_production_scheduled_sync_requires_defence_secret():
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, **BASE, SCHEDULED_SYNC_ENABLED=True)
+    configured = Settings(
+        _env_file=None, **BASE, SCHEDULED_SYNC_ENABLED=True,
+        SCHEDULED_SYNC_SHARED_SECRET="configured-secret",
+    )
+    assert configured.scheduled_sync_enabled is True
+
+
 @pytest.mark.parametrize("override", [
     {"ANALYSIS_QUEUE_BACKEND": "local"},
     {"AUTO_CREATE_SCHEMA": True},
