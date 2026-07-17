@@ -1,10 +1,9 @@
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.background_tasks import analyze_game_background, release_analysis, reserve_analysis
-from app.dependencies import StockfishFactory, get_database_session, get_stockfish_factory
+from app.dependencies import get_analysis_queue, get_database_session
 from app.models import AnalysisStatus, GameResult
 from app.repositories.games_repository import (
     GameSort,
@@ -19,6 +18,7 @@ from app.repositories.move_analysis_repository import (
 )
 from app.schemas import (
     AnalyzeGameResponse,
+    AnalyzeGameRequest,
     ApiGameListItem,
     GameDetailResponse,
     GameMovesResponse,
@@ -26,16 +26,10 @@ from app.schemas import (
     MoveAnalysisRead,
 )
 from app.services.analysis_service import GameNotFoundError
+from app.queues.errors import PermanentAnalysisTaskError
 
 
 router = APIRouter(prefix="/api/games", tags=["games"])
-
-
-def _run_reserved_analysis(game_id: int, stockfish_factory: StockfishFactory) -> None:
-    try:
-        analyze_game_background(game_id, stockfish_factory)
-    finally:
-        release_analysis(game_id)
 
 
 def _require_game(session: Session, game_id: int):
@@ -163,12 +157,13 @@ def get_game_moves(
 )
 def queue_game_analysis(
     game_id: int,
-    background_tasks: BackgroundTasks,
-    session: Session = Depends(get_database_session),
-    stockfish_factory: StockfishFactory = Depends(get_stockfish_factory),
+    request: AnalyzeGameRequest | None = None,
+    analysis_queue=Depends(get_analysis_queue),
 ) -> AnalyzeGameResponse:
-    game = _require_game(session, game_id)
-    if game.analysis_status is AnalysisStatus.ANALYZING or not reserve_analysis(game_id):
-        return AnalyzeGameResponse(game_id=game_id, status="already_analyzing")
-    background_tasks.add_task(_run_reserved_analysis, game_id, stockfish_factory)
-    return AnalyzeGameResponse(game_id=game_id, status="queued")
+    try:
+        result = analysis_queue.enqueue_game_analysis(
+            game_id=game_id, force=request.force if request else False
+        )
+    except PermanentAnalysisTaskError as error:
+        raise GameNotFoundError(str(error)) from error
+    return AnalyzeGameResponse(game_id=game_id, status=result.status, task_id=result.task_id)

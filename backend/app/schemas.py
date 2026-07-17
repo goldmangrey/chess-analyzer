@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator
 
@@ -208,6 +209,22 @@ class ChessComImportResponse(ApiSchema):
 class AnalyzeGameResponse(ApiSchema):
     game_id: int
     status: str
+    task_id: str | None = None
+
+
+class AnalyzeGameRequest(ApiSchema):
+    force: bool = False
+
+
+class AnalyzeGameTaskRequest(ApiSchema):
+    game_id: int = Field(gt=0)
+    force: bool = False
+    schema_version: Literal[1] = 1
+
+
+class AnalyzeGameTaskResponse(ApiSchema):
+    game_id: int
+    status: Literal["completed", "already_completed"]
 
 
 class ApiGameListItem(ApiSchema):
@@ -297,12 +314,21 @@ class ChessComStatus(ApiSchema):
     user_agent_configured: bool
 
 
+class AnalysisQueueStatus(ApiSchema):
+    backend: Literal["local", "cloud_tasks"]
+    status: Literal["ready", "degraded"]
+    configured: bool
+    queue_name: str | None = None
+    worker_url_host: str | None = None
+
+
 class SystemStatusResponse(ApiSchema):
     status: str
     backend: str
     database: DatabaseStatus
     stockfish: StockfishStatus
     chesscom: ChessComStatus
+    analysis_queue: AnalysisQueueStatus
 
 
 class AppSettingsResponse(ReadSchema):

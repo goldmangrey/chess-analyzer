@@ -19,11 +19,16 @@ export function AnalyzeGameButton({ gameId, status }: { gameId: number; status: 
   async function analyze() {
     setLoading(true);
     try {
-      const result = await queueGameAnalysis(gameId);
+      const result = await queueGameAnalysis(gameId, repeat);
+      const messages = {
+        queued: "Отчёт поставлен в очередь",
+        already_queued: "Отчёт уже поставлен в очередь",
+        already_analyzing: "Отчёт уже создаётся",
+        already_completed: "Отчёт уже готов",
+      } as const;
       toast({
-        tone: result.status === "already_analyzing" ? "info" : "success",
-        title: result.status === "already_analyzing" ? "Партия уже анализируется" : "Анализ поставлен в очередь",
-        description: result.status === "queued" ? `Партия #${gameId} будет обработана в background.` : undefined,
+        tone: result.status === "queued" ? "success" : "info",
+        title: messages[result.status],
       });
       router.refresh();
     } catch (error) {
@@ -31,7 +36,7 @@ export function AnalyzeGameButton({ gameId, status }: { gameId: number; status: 
         ? "Backend недоступен"
         : error instanceof ApiError && error.status === 404
           ? "Партия не найдена"
-          : "Не удалось запустить анализ";
+          : "Не удалось поставить отчёт в очередь";
       toast({ tone: "error", title });
     } finally {
       setLoading(false);

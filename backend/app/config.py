@@ -1,12 +1,19 @@
 from functools import lru_cache
+from enum import Enum
 from pathlib import Path
+from urllib.parse import urlsplit
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 ENV_FILE = BACKEND_DIR / ".env"
+
+
+class AnalysisQueueBackend(str, Enum):
+    LOCAL = "local"
+    CLOUD_TASKS = "cloud_tasks"
 
 
 class Settings(BaseSettings):
@@ -28,6 +35,15 @@ class Settings(BaseSettings):
     db_max_overflow: int = Field(default=5, ge=0, le=20, validation_alias="DB_MAX_OVERFLOW")
     db_pool_timeout: int = Field(default=30, ge=1, validation_alias="DB_POOL_TIMEOUT")
     db_pool_recycle: int = Field(default=1800, ge=0, validation_alias="DB_POOL_RECYCLE")
+    analysis_queue_backend: AnalysisQueueBackend = Field(default=AnalysisQueueBackend.LOCAL, validation_alias="ANALYSIS_QUEUE_BACKEND")
+    gcp_project_id: str = Field(default="", validation_alias="GCP_PROJECT_ID")
+    gcp_region: str = Field(default="europe-west1", validation_alias="GCP_REGION")
+    cloud_tasks_queue: str = Field(default="chess-analysis", validation_alias="CLOUD_TASKS_QUEUE")
+    analysis_worker_url: str = Field(default="", validation_alias="ANALYSIS_WORKER_URL")
+    cloud_tasks_service_account_email: str = Field(default="", validation_alias="CLOUD_TASKS_SERVICE_ACCOUNT_EMAIL")
+    cloud_tasks_oidc_audience: str = Field(default="", validation_alias="CLOUD_TASKS_OIDC_AUDIENCE")
+    cloud_tasks_task_deadline_seconds: int = Field(default=1800, ge=60, le=1800, validation_alias="CLOUD_TASKS_TASK_DEADLINE_SECONDS")
+    analysis_worker_shared_secret: str = Field(default="", validation_alias="ANALYSIS_WORKER_SHARED_SECRET")
     chess_username: str = Field(
         default="Yeskendir",
         validation_alias="CHESS_USERNAME",
@@ -71,6 +87,28 @@ class Settings(BaseSettings):
         if not value.strip():
             raise ValueError("value must not be empty")
         return value
+
+    @model_validator(mode="after")
+    def validate_cloud_tasks(self) -> "Settings":
+        if self.analysis_queue_backend is AnalysisQueueBackend.CLOUD_TASKS:
+            required = {
+                "GCP_PROJECT_ID": self.gcp_project_id,
+                "GCP_REGION": self.gcp_region,
+                "CLOUD_TASKS_QUEUE": self.cloud_tasks_queue,
+                "ANALYSIS_WORKER_URL": self.analysis_worker_url,
+                "CLOUD_TASKS_SERVICE_ACCOUNT_EMAIL": self.cloud_tasks_service_account_email,
+            }
+            missing = [name for name, value in required.items() if not value.strip()]
+            if missing:
+                raise ValueError(f"Missing Cloud Tasks configuration: {', '.join(missing)}")
+        return self
+
+    @property
+    def analysis_worker_audience(self) -> str:
+        if self.cloud_tasks_oidc_audience.strip():
+            return self.cloud_tasks_oidc_audience.strip()
+        parsed = urlsplit(self.analysis_worker_url)
+        return f"{parsed.scheme}://{parsed.netloc}"
 
 
 @lru_cache

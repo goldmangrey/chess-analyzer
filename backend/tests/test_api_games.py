@@ -2,7 +2,9 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
-from app.api import games as games_api
+from app.dependencies import get_analysis_queue
+from app.queues.base import AnalysisEnqueueResult
+from app.queues.errors import PermanentAnalysisTaskError
 from app.models import AnalysisStatus, Color, Game, GameResult, MoveAnalysis, MoveClassification
 
 
@@ -115,14 +117,16 @@ def test_moves_all_plies_sorted_and_analyze_queued(api_app, api_client, monkeypa
     assert api_client.get("/api/games/9999/moves").status_code == 404
 
     queued = []
-    monkeypatch.setattr(
-        games_api,
-        "analyze_game_background",
-        lambda game_id, factory: queued.append(game_id),
-    )
+    class Queue:
+        def enqueue_game_analysis(self, *, game_id, force=False):
+            if game_id == 9999:
+                raise PermanentAnalysisTaskError("missing")
+            queued.append(game_id)
+            return AnalysisEnqueueResult(game_id, "queued", "test-task")
+    api_app.dependency_overrides[get_analysis_queue] = lambda: Queue()
     response = api_client.post(f"/api/games/{first_id}/analyze")
     assert response.status_code == 202
-    assert response.json() == {"game_id": first_id, "status": "queued"}
+    assert response.json() == {"game_id": first_id, "status": "queued", "task_id": "test-task"}
     assert queued == [first_id]
     assert api_client.post("/api/games/9999/analyze").status_code == 404
 
@@ -134,10 +138,13 @@ def test_analyzing_game_is_not_queued_twice(api_app, api_client, monkeypatch) ->
     game_id = game.id
     session.close()
     queued = []
-    monkeypatch.setattr(games_api, "analyze_game_background", lambda *args: queued.append(args))
+    class Queue:
+        def enqueue_game_analysis(self, *, game_id, force=False):
+            return AnalysisEnqueueResult(game_id, "already_analyzing")
+    api_app.dependency_overrides[get_analysis_queue] = lambda: Queue()
 
     response = api_client.post(f"/api/games/{game_id}/analyze")
 
     assert response.status_code == 202
-    assert response.json() == {"game_id": game_id, "status": "already_analyzing"}
+    assert response.json() == {"game_id": game_id, "status": "already_analyzing", "task_id": None}
     assert queued == []

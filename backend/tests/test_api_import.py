@@ -5,6 +5,8 @@ from sqlalchemy import func, select
 
 from app.api import import_games as import_api
 from app.dependencies import get_chesscom_client
+from app.dependencies import get_analysis_queue
+from app.queues.base import AnalysisEnqueueResult
 from app.models import AnalysisStatus, Game
 from app.services.chesscom_client import (
     ChessComGameRecord,
@@ -66,11 +68,11 @@ def test_import_explicit_duplicate_invalid_and_background_queue(
     monkeypatch,
 ) -> None:
     queued = []
-    monkeypatch.setattr(
-        import_api,
-        "analyze_games_background",
-        lambda ids, factory: queued.append(tuple(ids)),
-    )
+    class Queue:
+        def enqueue_game_analysis(self, *, game_id, force=False):
+            queued.append(game_id)
+            return AnalysisEnqueueResult(game_id, "queued")
+    api_app.dependency_overrides[get_analysis_queue] = lambda: Queue()
     api_app.dependency_overrides[get_chesscom_client] = lambda: FakeClient([
         record("new", pgn("new", "Player")),
         record("invalid", "broken"),
@@ -83,7 +85,7 @@ def test_import_explicit_duplicate_invalid_and_background_queue(
     assert first.json()["imported"] == 1
     assert first.json()["skipped_invalid"] == 1
     assert first.json()["analysis_queued"] == 1
-    assert queued == [(1,)]
+    assert queued == [1]
 
     api_app.dependency_overrides[get_chesscom_client] = lambda: FakeClient([
         record("new", pgn("new", "Player")),

@@ -2,6 +2,8 @@ from collections.abc import Iterator
 
 from app.api import sync as sync_api
 from app.dependencies import get_chesscom_client, get_settings_dependency
+from app.dependencies import get_analysis_queue
+from app.queues.base import AnalysisEnqueueResult
 from app.services.chesscom_client import ChessComGameRecord, ChessComNetworkError
 
 
@@ -49,13 +51,17 @@ def test_initial_sync_bounds_history_and_does_not_analyze_all(api_app, api_clien
     })
     configure(api_app, client)
     queued = []
-    monkeypatch.setattr(sync_api, "_run_reserved_batch", lambda ids, _factory: queued.append(tuple(ids)))
+    class Queue:
+        def enqueue_game_analysis(self, *, game_id, force=False):
+            queued.append(game_id)
+            return AnalysisEnqueueResult(game_id, "queued")
+    api_app.dependency_overrides[get_analysis_queue] = lambda: Queue()
     response = api_client.post("/api/sync/chess-com", json={"username": "Player", "mode": "initial", "initial_months": 2, "auto_analyze_latest": True})
     assert response.status_code == 200
     body = response.json()
     assert body["imported"] == 3 and body["latest_game_id"] is not None
     assert body["analysis_queued_game_id"] == body["latest_game_id"]
-    assert queued == [(body["latest_game_id"],)]
+    assert queued == [body["latest_game_id"]]
     assert client.requested_archives == client.archives[:2]
     settings = api_client.get("/api/settings").json()
     assert settings["initial_sync_completed"] is True

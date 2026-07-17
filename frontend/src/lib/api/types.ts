@@ -134,7 +134,11 @@ export type GamesQuery = {
   sort?: GamesSort;
 };
 
-export type AnalyzeGameResponse = { game_id: number; status: "queued" | "already_analyzing" };
+export type AnalyzeGameResponse = {
+  game_id: number;
+  status: "queued" | "already_queued" | "already_analyzing" | "already_completed";
+  task_id: string | null;
+};
 
 export type SystemStatus = {
   status: "ready" | "degraded";
@@ -142,6 +146,13 @@ export type SystemStatus = {
   database: { status: "ready" | "degraded" | "unavailable"; backend: "sqlite" | "postgresql"; path: string | null; writable: boolean; tables_ready: boolean; schema_ready: boolean; migration_revision: string | null };
   stockfish: { status: "ready" | "unavailable"; path: string; executable: boolean };
   chesscom: { configured: boolean; user_agent_configured: boolean };
+  analysis_queue: {
+    backend: "local" | "cloud_tasks";
+    status: "ready" | "degraded";
+    configured: boolean;
+    queue_name: string | null;
+    worker_url_host: string | null;
+  };
 };
 
 export type SyncStatus = "never" | "running" | "completed" | "failed";

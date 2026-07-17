@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 
-from app.api import import_games as import_api
-from app.dependencies import get_chesscom_client
+from app.dependencies import get_analysis_queue, get_chesscom_client
+from app.queues.base import AnalysisEnqueueResult
 from app.models import AnalysisStatus, Color, MoveClassification
 from app.repositories.games_repository import get_game_by_id, set_analysis_status
 from app.repositories.move_analysis_repository import bulk_replace_move_analysis
@@ -49,7 +49,11 @@ def test_local_api_flow_without_network_or_stockfish(api_app, api_client, monkey
             finally:
                 session.close()
 
-    monkeypatch.setattr(import_api, "analyze_games_background", fake_analysis)
+    class Queue:
+        def enqueue_game_analysis(self, *, game_id, force=False):
+            fake_analysis((game_id,), None)
+            return AnalysisEnqueueResult(game_id, "queued")
+    api_app.dependency_overrides[get_analysis_queue] = lambda: Queue()
 
     imported = api_client.post("/api/import/chess-com", json={"analyze": True})
     assert imported.status_code == 200

@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+from urllib.parse import urlsplit
 
 from sqlalchemy import Engine, inspect
 from sqlalchemy.engine import make_url
@@ -9,6 +10,7 @@ from app.database import ALEMBIC_HEAD
 from app.database_url import database_backend, resolve_database_url
 from app.schemas import (
     ChessComStatus,
+    AnalysisQueueStatus,
     DatabaseStatus,
     StockfishStatus,
     SystemStatusResponse,
@@ -69,11 +71,25 @@ def get_system_status(settings: Settings, engine: Engine) -> SystemStatusRespons
         configured=bool(settings.chess_username.strip()),
         user_agent_configured=bool(settings.chesscom_user_agent.strip()),
     )
+    cloud = settings.analysis_queue_backend.value == "cloud_tasks"
+    queue_configured = not cloud or all((
+        settings.gcp_project_id, settings.gcp_region, settings.cloud_tasks_queue,
+        settings.analysis_worker_url, settings.cloud_tasks_service_account_email,
+    ))
+    worker_host = urlsplit(settings.analysis_worker_url).netloc or None
+    analysis_queue = AnalysisQueueStatus(
+        backend=settings.analysis_queue_backend.value,
+        status="ready" if queue_configured else "degraded",
+        configured=queue_configured,
+        queue_name=settings.cloud_tasks_queue if cloud else None,
+        worker_url_host=worker_host if cloud else None,
+    )
     ready = (
         database.status == "ready"
         and stockfish.status == "ready"
         and chesscom.configured
         and chesscom.user_agent_configured
+        and analysis_queue.status == "ready"
     )
     return SystemStatusResponse(
         status="ready" if ready else "degraded",
@@ -81,4 +97,5 @@ def get_system_status(settings: Settings, engine: Engine) -> SystemStatusRespons
         database=database,
         stockfish=stockfish,
         chesscom=chesscom,
+        analysis_queue=analysis_queue,
     )

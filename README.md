@@ -183,9 +183,27 @@ Swagger:  http://127.0.0.1:8000/docs
 Cloud Scheduler/Jobs. Старые партии автоматически не анализируются: Stockfish
 запускается только по запросу или для одной самой свежей новой партии.
 
-Анализ идёт через FastAPI `BackgroundTasks`. Он последовательный в пределах
-процесса и прервётся при остановке backend. Страница открытой анализируемой
-партии обновляется с ограниченным интервалом; бесконечного polling нет.
+## Очередь анализа
+
+Локальный режим по умолчанию использует FastAPI `BackgroundTasks` только как
+адаптер очереди:
+
+```env
+ANALYSIS_QUEUE_BACKEND=local
+```
+
+Cloud Tasks режим настраивается через `ANALYSIS_QUEUE_BACKEND=cloud_tasks`,
+`GCP_PROJECT_ID`, `GCP_REGION`, `CLOUD_TASKS_QUEUE`, `ANALYSIS_WORKER_URL` и
+`CLOUD_TASKS_SERVICE_ACCOUNT_EMAIL`. Поток выполнения: API → Cloud Tasks →
+`POST /internal/tasks/analyze-game` → Stockfish → PostgreSQL. Одна task всегда
+соответствует одной партии; worker идемпотентен, а повторная доставка безопасна.
+Приложение не создаёт Cloud Tasks queue автоматически. Queue и production
+OIDC/IAM deployment будут настроены на следующем этапе.
+
+Рекомендуемые параметры queue: 5 попыток, backoff 10–300 секунд, 1–2
+одновременных dispatch и 1 dispatch/second. Локальная задача прервётся при
+остановке backend. Страница открытой анализируемой партии обновляется с
+ограниченным интервалом; бесконечного polling нет.
 
 ## REST API
 

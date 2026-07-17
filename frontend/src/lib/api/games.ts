@@ -16,8 +16,12 @@ export function fetchGames(
   return apiFetch<GamesListResponse>(`/api/games${query}`, { cache: "no-store", signal });
 }
 
-export function queueGameAnalysis(gameId: number, signal?: AbortSignal): Promise<AnalyzeGameResponse> {
-  return apiFetch<AnalyzeGameResponse>(`/api/games/${gameId}/analyze`, { method: "POST", signal });
+export function queueGameAnalysis(gameId: number, force = false, signal?: AbortSignal): Promise<AnalyzeGameResponse> {
+  return apiFetch<AnalyzeGameResponse>(`/api/games/${gameId}/analyze`, {
+    method: "POST",
+    body: JSON.stringify({ force }),
+    signal,
+  });
 }
 
 export function fetchGameDetail(gameId: number, signal?: AbortSignal): Promise<GameDetailResponse> {
