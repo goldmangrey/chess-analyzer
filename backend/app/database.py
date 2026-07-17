@@ -48,6 +48,11 @@ def create_database_engine(database_url: str) -> Engine:
             cursor = dbapi_connection.cursor()
             cursor.execute("PRAGMA foreign_keys=ON")
             cursor.close()
+            dbapi_connection.isolation_level = None
+
+        @event.listens_for(database_engine, "begin")
+        def begin_sqlite_transaction(connection) -> None:
+            connection.exec_driver_sql("BEGIN")
 
     return database_engine
 

@@ -32,6 +32,18 @@ Repositories flush changes when needed but never commit automatically; callers
 own transaction boundaries. Import, analysis services, and REST APIs are not
 implemented yet.
 
+Chess.com import and PGN parsing are available through the manual CLI. Set a
+valid, identifying `CHESSCOM_USER_AGENT`, then run:
+
+```bash
+cd backend
+source .venv/bin/activate
+python -m scripts.import_games --username Yeskendir --limit 10
+```
+
+The first real CLI run initializes `backend/data/chess.db`. Newly imported games
+are stored with `pending` analysis status. Stockfish analysis is not implemented.
+
 From the repository root:
 
 ```bash
