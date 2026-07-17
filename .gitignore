@@ -47,3 +47,4 @@ frontend/.env.*.local
 # Logs
 *.log
 npm-debug.log*
+backups/
