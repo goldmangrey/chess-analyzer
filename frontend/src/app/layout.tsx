@@ -1,20 +1,23 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { JetBrains_Mono, Manrope } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const manrope = Manrope({
+  variable: "--font-sans",
+  subsets: ["cyrillic", "latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const jetBrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["cyrillic", "latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "Chess AI Teacher",
-  description: "Local foundation for Chess AI Teacher",
+  description:
+    "Локальный анализ шахматных партий Chess.com с помощью Stockfish.",
 };
 
 export default function RootLayout({
@@ -25,9 +28,9 @@ export default function RootLayout({
   return (
     <html
       lang="ru"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${manrope.variable} ${jetBrainsMono.variable}`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body>{children}</body>
     </html>
   );
 }

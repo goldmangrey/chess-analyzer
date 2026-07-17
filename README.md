@@ -120,6 +120,18 @@ pytest
 
 ## Frontend
 
+The Soft Bento frontend design foundation is implemented with Manrope and
+JetBrains Mono, shared CSS tokens, and low-level UI primitives. Review the
+design-system workbench at <http://localhost:3000/components-preview>.
+
+Configure the direct FastAPI base URL in `frontend/.env.local`:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+```
+
+The full Dashboard, Games, and Game Analysis interfaces are not implemented yet.
+
 From the repository root:
 
 ```bash
@@ -138,4 +150,4 @@ npm run lint
 npm run build
 ```
 
-This README describes only the current foundation. Later-stage features are intentionally not presented as available.
+Later-stage frontend features are intentionally not presented as available.
