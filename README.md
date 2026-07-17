@@ -96,7 +96,8 @@ The FastAPI application exposes:
 Swagger UI is available at <http://127.0.0.1:8000/docs>. Import and analysis can
 be requested through REST; Stockfish work runs through FastAPI BackgroundTasks.
 These in-process tasks are interrupted if the backend stops, which is acceptable
-for the local MVP. The frontend is not connected yet.
+for the local MVP. The Dashboard consumes the statistics and import endpoints;
+the Games and detailed analysis interfaces are still pending.
 
 From the repository root:
 
@@ -120,11 +121,12 @@ pytest
 
 ## Frontend
 
-The Soft Bento frontend foundation now includes a reusable `AppShell`, top
-navigation, responsive layout primitives, native form controls, loading and
-empty states, plus local Modal and Toast feedback components. Review the
-expanded design-system workbench at
-<http://localhost:3000/components-preview>.
+The Soft Bento frontend now includes a real Dashboard backed by
+`GET /api/stats/dashboard`. Chess.com import is available from the Dashboard;
+new games can be queued for local Stockfish analysis through FastAPI's
+background task flow. The interface also includes the reusable `AppShell`, top
+navigation, responsive layout primitives, and shared feedback states. Review
+the design-system workbench at <http://localhost:3000/components-preview>.
 
 Configure the direct FastAPI base URL in `frontend/.env.local`:
 
@@ -132,8 +134,8 @@ Configure the direct FastAPI base URL in `frontend/.env.local`:
 NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
 ```
 
-The `/games` route is currently a placeholder so navigation never leads to a
-404. Real API integration, the full Dashboard, Games list, and Game Analysis
+The backend must be running for live Dashboard data and import. The `/games`
+route remains a placeholder; the Games list and detailed Game Analysis
 interfaces are not implemented yet.
 
 From the repository root:
@@ -145,6 +147,19 @@ npm run dev
 ```
 
 Open <http://localhost:3000>.
+
+For local development, run the backend and frontend in separate terminals:
+
+```bash
+cd backend
+source .venv/bin/activate
+python run.py
+```
+
+```bash
+cd frontend
+npm run dev
+```
 
 Run frontend checks:
 

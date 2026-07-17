@@ -1,8 +1,5 @@
 import type { StatusPillTone } from "@/components/ui/status-pill";
-
-export type AnalysisStatus = "pending" | "analyzing" | "completed" | "failed";
-export type GameResult = "win" | "draw" | "loss";
-export type MoveClassification = "normal" | "inaccuracy" | "mistake" | "blunder";
+import type { AnalysisStatus, GameResult, MoveClassification } from "@/lib/api/types";
 
 export function analysisStatusLabel(status: AnalysisStatus): string {
   return { pending: "Ожидает", analyzing: "Анализируется", completed: "Завершён", failed: "Ошибка" }[status];
