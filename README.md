@@ -75,7 +75,28 @@ implemented yet.
 Backend statistics now provides real summaries, period comparisons, weakest
 openings, trends, and recent-game metrics. Every personal move metric explicitly
 excludes opponent moves through `is_user_move=true`. Accuracy, Elo estimates,
-AI explanations, REST endpoints, and the Dashboard UI are not implemented.
+AI explanations, and the Dashboard UI are not implemented.
+
+## REST API
+
+The FastAPI application exposes:
+
+- `GET /health`
+- `POST /api/import/chess-com`
+- `GET /api/games`
+- `GET /api/games/{game_id}`
+- `GET /api/games/{game_id}/moves`
+- `POST /api/games/{game_id}/analyze`
+- `GET /api/stats/summary`
+- `GET /api/stats/trends`
+- `GET /api/stats/openings`
+- `GET /api/stats/performance`
+- `GET /api/stats/dashboard`
+
+Swagger UI is available at <http://127.0.0.1:8000/docs>. Import and analysis can
+be requested through REST; Stockfish work runs through FastAPI BackgroundTasks.
+These in-process tasks are interrupted if the backend stops, which is acceptable
+for the local MVP. The frontend is not connected yet.
 
 From the repository root:
 

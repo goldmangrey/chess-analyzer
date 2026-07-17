@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models import AnalysisStatus, Color, GameResult, MoveClassification
 
@@ -175,3 +175,101 @@ class StatisticsDashboard(StatisticsSchema):
     weakest_openings: tuple[OpeningWeakness, ...]
     trends: tuple[TrendPoint, ...]
     recent_games: tuple[RecentGameStats, ...]
+
+
+class ApiSchema(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class ChessComImportRequest(ApiSchema):
+    username: str | None = None
+    limit: int | None = Field(default=None, ge=1, le=50)
+    analyze: bool = True
+
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("username must not be empty")
+        return value.strip() if value is not None else None
+
+
+class ChessComImportResponse(ApiSchema):
+    requested: int
+    imported: int
+    skipped_duplicates: int
+    skipped_invalid: int
+    examined: int
+    imported_game_ids: tuple[int, ...]
+    analysis_queued: int
+
+
+class AnalyzeGameResponse(ApiSchema):
+    game_id: int
+    status: str
+
+
+class ApiGameListItem(ApiSchema):
+    id: int
+    played_at: datetime | None
+    opponent_username: str
+    user_color: Color
+    result: GameResult
+    white_rating: int | None
+    black_rating: int | None
+    opening_code: str | None
+    opening_name: str | None
+    time_control: str | None
+    analysis_status: AnalysisStatus
+    average_cp_loss: float | None
+    mistakes: int
+    blunders: int
+
+
+class GamesListResponse(ApiSchema):
+    items: tuple[ApiGameListItem, ...]
+    limit: int
+    offset: int
+    returned_count: int
+    total: int
+
+
+class GameDetailResponse(ApiSchema):
+    id: int
+    external_id: str
+    platform: str
+    played_at: datetime | None
+    white_username: str
+    black_username: str
+    white_rating: int | None
+    black_rating: int | None
+    user_color: Color
+    result: GameResult
+    opening_code: str | None
+    opening_name: str | None
+    time_control: str | None
+    pgn: str
+    analysis_status: AnalysisStatus
+    average_cp_loss: float | None
+    inaccuracies: int
+    mistakes: int
+    blunders: int
+
+
+class GameMovesResponse(ApiSchema):
+    game_id: int
+    analysis_status: AnalysisStatus
+    items: tuple[MoveAnalysisRead, ...]
+
+
+class TrendsResponse(ApiSchema):
+    items: tuple[TrendPoint, ...]
+
+
+class OpeningsResponse(ApiSchema):
+    items: tuple[OpeningWeakness, ...]
+
+
+class ApiErrorResponse(ApiSchema):
+    error: str
+    message: str

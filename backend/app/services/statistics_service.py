@@ -176,11 +176,16 @@ def get_dashboard_statistics(
     recent_games_limit: int = 5,
     weakest_openings_limit: int = 5,
     period_size: int = 10,
+    minimum_opening_games: int = 3,
 ) -> StatisticsDashboard:
     return StatisticsDashboard(
         summary=get_summary(session),
         comparison=compare_recent_periods(session, period_size),
-        weakest_openings=get_weakest_openings(session, limit=weakest_openings_limit),
+        weakest_openings=get_weakest_openings(
+            session,
+            minimum_games=minimum_opening_games,
+            limit=weakest_openings_limit,
+        ),
         trends=get_trends(session, trend_limit),
         recent_games=get_recent_games(session, recent_games_limit),
     )

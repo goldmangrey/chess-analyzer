@@ -1,14 +1,24 @@
 from datetime import datetime, timezone
+from dataclasses import dataclass
 from enum import Enum
 
 from sqlalchemy import Select, case, func, or_, select
 from sqlalchemy.orm import Session
 
-from app.models import AnalysisStatus, Game, GameResult, MoveAnalysis, MoveClassification
+from app.models import AnalysisStatus, Color, Game, GameResult, MoveAnalysis, MoveClassification
 from app.schemas import GameCreate
 
 
 MAX_PAGE_SIZE = 100
+
+
+@dataclass(frozen=True)
+class GameListMetricsRow:
+    game: Game
+    opponent_username: str
+    average_cp_loss: float | None
+    mistakes: int
+    blunders: int
 
 
 class GameSort(str, Enum):
@@ -176,3 +186,93 @@ def list_games(
         ).order_by(average_loss.c.average_cp_loss.desc().nulls_last(), *newest_tie_breaker)
 
     return list(session.scalars(statement.offset(offset).limit(limit)).all())
+
+
+def count_games(
+    session: Session,
+    *,
+    result: GameResult | None = None,
+    opening: str | None = None,
+    analysis_status: AnalysisStatus | None = None,
+) -> int:
+    statement = select(func.count(Game.id))
+    if result is not None:
+        statement = statement.where(Game.result == result)
+    if analysis_status is not None:
+        statement = statement.where(Game.analysis_status == analysis_status)
+    if opening and (term := opening.strip()):
+        pattern = f"%{term.lower()}%"
+        statement = statement.where(
+            or_(
+                func.lower(Game.opening_name).like(pattern),
+                func.lower(Game.opening_code).like(pattern),
+            )
+        )
+    return int(session.scalar(statement) or 0)
+
+
+def list_games_with_personal_metrics(
+    session: Session,
+    *,
+    result: GameResult | None = None,
+    opening: str | None = None,
+    analysis_status: AnalysisStatus | None = None,
+    limit: int = 20,
+    offset: int = 0,
+    sort: GameSort | str = GameSort.NEWEST,
+) -> tuple[GameListMetricsRow, ...]:
+    games = list_games(
+        session,
+        result=result,
+        opening=opening,
+        analysis_status=analysis_status,
+        limit=limit,
+        offset=offset,
+        sort=sort,
+    )
+    if not games:
+        return ()
+    game_ids = [game.id for game in games]
+    metrics_statement = (
+        select(
+            MoveAnalysis.game_id,
+            func.avg(MoveAnalysis.centipawn_loss),
+            func.sum(
+                case(
+                    (MoveAnalysis.classification == MoveClassification.MISTAKE, 1),
+                    else_=0,
+                )
+            ),
+            func.sum(
+                case(
+                    (MoveAnalysis.classification == MoveClassification.BLUNDER, 1),
+                    else_=0,
+                )
+            ),
+        )
+        .join(Game, Game.id == MoveAnalysis.game_id)
+        .where(
+            MoveAnalysis.game_id.in_(game_ids),
+            MoveAnalysis.is_user_move.is_(True),
+            Game.analysis_status == AnalysisStatus.COMPLETED,
+        )
+        .group_by(MoveAnalysis.game_id)
+    )
+    metrics = {
+        row[0]: (float(row[1]), int(row[2]), int(row[3]))
+        for row in session.execute(metrics_statement)
+    }
+    return tuple(
+        GameListMetricsRow(
+            game=game,
+            opponent_username=(
+                game.black_username
+                if game.user_color is Color.WHITE
+                else game.white_username
+            ),
+            average_cp_loss=metrics.get(game.id, (None, 0, 0))[0],
+            mistakes=metrics.get(game.id, (None, 0, 0))[1],
+            blunders=metrics.get(game.id, (None, 0, 0))[2],
+        )
+        for game in games
+    )
