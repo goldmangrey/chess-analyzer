@@ -1,5 +1,5 @@
 import { BentoGrid, BentoGridItem } from "@/components/layout";
-import type { StatisticsDashboard } from "@/lib/api/types";
+import type { StatisticsDashboard, SystemStatus } from "@/lib/api/types";
 
 import { AnalyzedGamesCard } from "./analyzed-games-card";
 import { BlunderFreeCard } from "./blunder-free-card";
@@ -10,20 +10,21 @@ import { RecentGamesCard } from "./recent-games-card";
 import { WeakestOpeningsCard } from "./weakest-openings-card";
 import { WelcomeCard } from "./welcome-card";
 import { EmptyDashboard } from "./empty-dashboard";
+import { SystemDiagnosticCard } from "./system-diagnostic-card";
 
-export function DashboardPage({ data }: { data: StatisticsDashboard }) {
+export function DashboardPage({ data, systemStatus }: { data: StatisticsDashboard; systemStatus: SystemStatus }) {
   const { summary, comparison, trends, weakest_openings, recent_games } = data;
   if (summary.total_games === 0) {
-    return (
+    return <><SystemDiagnosticCard status={systemStatus} />
       <BentoGrid>
         <BentoGridItem className="md:col-span-6 xl:col-span-8"><WelcomeCard summary={summary} comparison={comparison} /></BentoGridItem>
         <BentoGridItem className="md:col-span-6 xl:col-span-4"><ImportCard /></BentoGridItem>
         <BentoGridItem className="md:col-span-6 xl:col-span-12"><EmptyDashboard /></BentoGridItem>
       </BentoGrid>
-    );
+    </>;
   }
 
-  return (
+  return <><SystemDiagnosticCard status={systemStatus} />
     <BentoGrid>
       <BentoGridItem className="md:col-span-6 xl:col-span-8"><WelcomeCard summary={summary} comparison={comparison} /></BentoGridItem>
       <BentoGridItem className="md:col-span-6 xl:col-span-4"><ImportCard /></BentoGridItem>
@@ -34,5 +35,5 @@ export function DashboardPage({ data }: { data: StatisticsDashboard }) {
       <BentoGridItem className="md:col-span-6 xl:col-span-4"><WeakestOpeningsCard openings={weakest_openings} /></BentoGridItem>
       <BentoGridItem className="md:col-span-6 xl:col-span-12"><RecentGamesCard games={recent_games} /></BentoGridItem>
     </BentoGrid>
-  );
+  </>;
 }

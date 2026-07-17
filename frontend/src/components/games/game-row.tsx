@@ -1,5 +1,7 @@
 import { AnalyzeGameButton } from "./analyze-game-button";
 
+import { ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 import { StatusPill } from "@/components/ui";
 import type { ApiGameListItem } from "@/lib/api/types";
 import { formatCpLoss, formatDate } from "@/lib/format";
@@ -25,7 +27,7 @@ export function GameRow({ game }: { game: ApiGameListItem }) {
       <td className="rounded-l-2xl py-4 pl-4 pr-3">
         <div className="flex items-center gap-3">
           <span aria-hidden="true" className={game.user_color === "white" ? "size-3 rounded-sm border border-[var(--border-strong)] bg-white" : "size-3 rounded-sm bg-surface-dark"} />
-          <div className="min-w-0"><p className="truncate text-sm font-semibold">{game.opponent_username}</p>{ratingText ? <p className="technical-number mt-1 text-xs text-text-muted">мой / соп. {ratingText}</p> : null}</div>
+          <div className="min-w-0"><Link href={`/games/${game.id}`} className="focus-ring group/link inline-flex max-w-full items-center gap-1 rounded-lg text-sm font-semibold hover:text-forest"><span className="truncate">{game.opponent_username}</span><ArrowUpRight aria-hidden="true" size={14} className="shrink-0 transition group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5" /></Link>{ratingText ? <p className="technical-number mt-1 text-xs text-text-muted">мой / соп. {ratingText}</p> : null}</div>
         </div>
       </td>
       <td className="px-3 py-4"><p className="whitespace-nowrap text-sm">{formatDate(game.played_at)}</p><p className="technical-number mt-1 text-xs text-text-muted">{game.time_control ?? "—"}</p></td>

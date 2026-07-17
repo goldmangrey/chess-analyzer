@@ -273,3 +273,29 @@ class OpeningsResponse(ApiSchema):
 class ApiErrorResponse(ApiSchema):
     error: str
     message: str
+
+
+class DatabaseStatus(ApiSchema):
+    status: str
+    path: str
+    writable: bool
+    tables_ready: bool
+
+
+class StockfishStatus(ApiSchema):
+    status: str
+    path: str
+    executable: bool
+
+
+class ChessComStatus(ApiSchema):
+    configured: bool
+    user_agent_configured: bool
+
+
+class SystemStatusResponse(ApiSchema):
+    status: str
+    backend: str
+    database: DatabaseStatus
+    stockfish: StockfishStatus
+    chesscom: ChessComStatus

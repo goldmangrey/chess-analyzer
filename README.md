@@ -1,156 +1,89 @@
 # Chess AI Teacher
 
-Chess AI Teacher is a local, single-user application intended to help review chess games and improve play. The repository is currently at the **foundation stage**: it contains a minimal FastAPI health endpoint and a minimal Next.js status page. Game import, analysis, persistence, and the full user interface are not implemented yet.
+Локальное однопользовательское приложение для импорта партий Chess.com, анализа
+каждого полухода нативным Stockfish и просмотра личной статистики. Данные хранятся
+только на компьютере пользователя в `backend/data/chess.db`. Firebase, облачные
+сервисы и AI/LLM API не используются.
 
-## Requirements
+## Требования
 
-- Python 3.11 or newer
-- Node.js 20 or newer
-- npm
+- macOS и Homebrew;
+- Python 3.11+;
+- Node.js 20+ и npm;
+- нативный Stockfish.
 
-## Backend
-
-Create an optional local configuration file from the provided example:
-
-```bash
-cp backend/.env.example backend/.env
-```
-
-The backend runs without `.env` by using safe defaults. The configuration covers
-the future database URL, Chess.com username and User-Agent, import limit, future
-Stockfish path and analysis limits, and the frontend origin. These integrations
-are not implemented yet.
-
-The SQLite schema and SQLAlchemy ORM models for games and per-move analysis are
-implemented. When explicitly initialized with the default configuration, the
-local database will be stored at `backend/data/chess.db`. Game import and
-Stockfish analysis are not implemented yet.
-
-The repository layer encapsulates game and move-analysis SQL queries, including
-filters, pagination, personal analytics sorting, and aggregate calculations.
-Repositories flush changes when needed but never commit automatically; callers
-own transaction boundaries. Import, analysis services, and REST APIs are not
-implemented yet.
-
-Chess.com import and PGN parsing are available through the manual CLI. Set a
-valid, identifying `CHESSCOM_USER_AGENT`, then run:
-
-```bash
-cd backend
-source .venv/bin/activate
-python -m scripts.import_games --username Yeskendir --limit 10
-```
-
-The first real CLI run initializes `backend/data/chess.db`. Newly imported games
-are stored with `pending` analysis status, ready for a separate local analysis run.
-
-## Local Stockfish analysis
-
-Install the native engine on macOS and find its path:
+## Установка Stockfish
 
 ```bash
 brew install stockfish
 which stockfish
+stockfish
 ```
 
-Set the discovered path in `backend/.env`, for example:
+В открывшейся UCI-консоли проверьте движок и завершите его:
 
-```env
-STOCKFISH_PATH=/opt/homebrew/bin/stockfish
+```text
+uci
+quit
 ```
 
-Analyze pending games sequentially:
-
-```bash
-cd backend
-source .venv/bin/activate
-python -m scripts.analyze_games --pending
-```
-
-Every ply is analyzed locally for both players and stored with evaluations, CP
-loss, and classification. Later personal statistics will use only rows where
-`is_user_move=true`. No AI API is used. REST and frontend integration are not
-implemented yet.
-
-Backend statistics now provides real summaries, period comparisons, weakest
-openings, trends, and recent-game metrics. Every personal move metric explicitly
-excludes opponent moves through `is_user_move=true`. Accuracy, Elo estimates,
-AI explanations, and the Dashboard UI are not implemented.
-
-## REST API
-
-The FastAPI application exposes:
-
-- `GET /health`
-- `POST /api/import/chess-com`
-- `GET /api/games`
-- `GET /api/games/{game_id}`
-- `GET /api/games/{game_id}/moves`
-- `POST /api/games/{game_id}/analyze`
-- `GET /api/stats/summary`
-- `GET /api/stats/trends`
-- `GET /api/stats/openings`
-- `GET /api/stats/performance`
-- `GET /api/stats/dashboard`
-
-Swagger UI is available at <http://127.0.0.1:8000/docs>. Import and analysis can
-be requested through REST; Stockfish work runs through FastAPI BackgroundTasks.
-These in-process tasks are interrupted if the backend stops, which is acceptable
-for the local MVP. The Dashboard consumes the statistics and import endpoints;
-the Games and detailed analysis interfaces are still pending.
-
-From the repository root:
+## Backend setup
 
 ```bash
 cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python run.py
+cp .env.example .env
 ```
 
-The health endpoint is available at <http://127.0.0.1:8000/health> and returns `{"status":"ok"}`.
+Проверьте в `backend/.env`:
 
-Run backend tests:
+```env
+APP_ENV=development
+CHESS_USERNAME=Yeskendir
+CHESSCOM_USER_AGENT=ChessAITeacher/1.0 (contact: your-email@example.com)
+STOCKFISH_PATH=/opt/homebrew/bin/stockfish
+```
+
+User-Agent должен содержать ваш корректный контакт. Для Intel Mac путь Stockfish
+может отличаться; используйте результат `which stockfish`.
+
+## Frontend setup
 
 ```bash
-cd backend
-source .venv/bin/activate
-pytest
+cd frontend
+npm install
+cp .env.local.example .env.local
 ```
 
-## Frontend
-
-The Soft Bento frontend now includes a real Dashboard backed by
-`GET /api/stats/dashboard`. Chess.com import is available from the Dashboard;
-new games can be queued for local Stockfish analysis through FastAPI's
-background task flow. The interface also includes the reusable `AppShell`, top
-navigation, responsive layout primitives, and shared feedback states. Review
-the design-system workbench at <http://localhost:3000/components-preview>.
-
-Configure the direct FastAPI base URL in `frontend/.env.local`:
+Frontend обращается к FastAPI напрямую:
 
 ```env
 NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
 ```
 
-The backend must be running for live Dashboard data and import. The `/games`
-route provides the real game history with URL-backed filters, backend sorting,
-server pagination, desktop table and responsive cards. Analysis and re-analysis
-can be queued from the list and continue through FastAPI BackgroundTasks. The
-detailed Game Analysis interface is not implemented yet.
+## Диагностика
 
-From the repository root:
+Из корня проекта:
 
 ```bash
-cd frontend
-npm install
-npm run dev
+./scripts/check-local.sh
 ```
 
-Open <http://localhost:3000>.
+После запуска состояние системы доступно через
+`GET http://127.0.0.1:8000/api/system/status`. Проверка не обращается к Chess.com
+и не запускает процесс Stockfish.
 
-For local development, run the backend and frontend in separate terminals:
+## Запуск
+
+Один терминал:
+
+```bash
+./scripts/dev.sh
+```
+
+Или два терминала:
 
 ```bash
 cd backend
@@ -163,12 +96,88 @@ cd frontend
 npm run dev
 ```
 
-Run frontend checks:
+Адреса:
+
+```text
+Frontend: http://localhost:3000
+Backend:  http://127.0.0.1:8000
+Swagger:  http://127.0.0.1:8000/docs
+```
+
+## Первый сценарий
+
+1. Откройте Dashboard.
+2. Введите Chess.com username.
+3. Импортируйте 5–10 партий.
+4. Оставьте включённым «Сразу анализировать Stockfish».
+5. Дождитесь завершения локального анализа.
+6. Откройте «Партии».
+7. Выберите партию для подробного разбора.
+
+Анализ идёт через FastAPI `BackgroundTasks`. Он последовательный в пределах
+процесса и прервётся при остановке backend. Страница открытой анализируемой
+партии обновляется с ограниченным интервалом; бесконечного polling нет.
+
+## REST API
+
+- `GET /health` — лёгкая проверка без SQLite/Stockfish probe;
+- `GET /api/system/status` — безопасная локальная диагностика;
+- `POST /api/import/chess-com`;
+- `GET /api/games`;
+- `GET /api/games/{game_id}`;
+- `GET /api/games/{game_id}/moves`;
+- `POST /api/games/{game_id}/analyze`;
+- `GET /api/stats/summary`;
+- `GET /api/stats/trends`;
+- `GET /api/stats/openings`;
+- `GET /api/stats/performance`;
+- `GET /api/stats/dashboard`.
+
+## Интерфейс
+
+- `/` — Dashboard и импорт Chess.com;
+- `/games` — история с URL-фильтрами, backend-сортировкой и пагинацией;
+- `/games/{id}` — read-only доска, все ply, лучшие ходы, PV, evaluation bar и timeline;
+- `/components-preview` — workbench дизайн-системы.
+
+Навигация по партии поддерживает стрелки, Home и End. Текстовые AI-объяснения
+не реализованы: все оценки получены локально от Stockfish.
+
+## Данные и сброс
+
+Production-база создаётся при первом запуске в:
+
+```text
+backend/data/chess.db
+```
+
+Перед ручным сбросом сделайте резервную копию:
+
+```bash
+cp backend/data/chess.db backend/data/chess.backup.db
+rm backend/data/chess.db
+```
+
+Удаление базы безвозвратно удаляет локальную историю, импорт и анализы. Скрипт
+автоматического сброса намеренно не предоставляется.
+
+## Проверки
+
+```bash
+cd backend
+source .venv/bin/activate
+pytest
+python -m compileall app scripts
+```
 
 ```bash
 cd frontend
 npm run lint
+npx tsc --noEmit
 npm run build
 ```
 
-Later-stage frontend features are intentionally not presented as available.
+```bash
+bash -n scripts/dev.sh
+bash -n scripts/check-local.sh
+```

@@ -49,3 +49,19 @@ export function formatRelativeDate(
 export function formatCompactMetric(value: number | null | undefined): string {
   return isFiniteNumber(value) ? numberFormatter.format(value) : "—";
 }
+
+export function formatEvaluation(value: number | null | undefined): string {
+  if (!isFiniteNumber(value)) return "—";
+  if (value >= 100_000) return "+#";
+  if (value <= -100_000) return "-#";
+  const pawns = value / 100;
+  return `${pawns >= 0 ? "+" : ""}${pawns.toFixed(2)}`;
+}
+
+export function formatColor(color: "white" | "black"): string {
+  return color === "white" ? "белые" : "чёрные";
+}
+
+export function formatMoveLabel(move: { move_number: number; player_color: "white" | "black"; played_move_san: string | null; played_move_uci: string }): string {
+  return `${move.move_number}${move.player_color === "black" ? "..." : "."} ${move.played_move_san ?? move.played_move_uci}`;
+}

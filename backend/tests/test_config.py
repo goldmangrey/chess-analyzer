@@ -5,6 +5,7 @@ from app.config import Settings, get_settings
 
 
 ENVIRONMENT_VARIABLES = (
+    "APP_ENV",
     "DATABASE_URL",
     "CHESS_USERNAME",
     "CHESSCOM_USER_AGENT",
@@ -33,6 +34,7 @@ def test_default_values() -> None:
     settings = make_settings()
 
     assert settings.model_dump() == {
+        "app_env": "development",
         "database_url": "sqlite:///./data/chess.db",
         "chess_username": "Yeskendir",
         "chesscom_user_agent": (

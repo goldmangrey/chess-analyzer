@@ -1,15 +1,20 @@
 from collections.abc import Callable, Generator
 
 from fastapi import Depends
+from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
-from app.database import get_db
+from app.database import engine, get_db
 from app.services.chesscom_client import ChessComClient
 from app.services.stockfish_service import StockfishService
 
 
 StockfishFactory = Callable[[], StockfishService]
+
+
+def get_database_engine() -> Engine:
+    return engine
 
 
 def get_settings_dependency() -> Settings:

@@ -19,8 +19,12 @@ export function AnalyzeGameButton({ gameId, status }: { gameId: number; status: 
   async function analyze() {
     setLoading(true);
     try {
-      await queueGameAnalysis(gameId);
-      toast({ tone: "success", title: "Анализ поставлен в очередь", description: `Партия #${gameId} будет обработана в background.` });
+      const result = await queueGameAnalysis(gameId);
+      toast({
+        tone: result.status === "already_analyzing" ? "info" : "success",
+        title: result.status === "already_analyzing" ? "Партия уже анализируется" : "Анализ поставлен в очередь",
+        description: result.status === "queued" ? `Партия #${gameId} будет обработана в background.` : undefined,
+      });
       router.refresh();
     } catch (error) {
       const title = error instanceof ApiNetworkError

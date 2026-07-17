@@ -3,7 +3,7 @@ import logging
 from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy.orm import Session
 
-from app.background_tasks import analyze_games_background
+from app.background_tasks import analyze_games_background, release_analysis, reserve_analysis
 from app.config import Settings
 from app.dependencies import (
     StockfishFactory,
@@ -19,6 +19,14 @@ from app.services.game_importer import import_recent_games
 
 router = APIRouter(prefix="/api/import", tags=["import"])
 logger = logging.getLogger(__name__)
+
+
+def _run_reserved_batch(game_ids, stockfish_factory: StockfishFactory) -> None:
+    try:
+        analyze_games_background(game_ids, stockfish_factory)
+    finally:
+        for game_id in game_ids:
+            release_analysis(game_id)
 
 
 @router.post("/chess-com", response_model=ChessComImportResponse)
@@ -39,14 +47,19 @@ def import_chesscom_games(
         session.rollback()
         raise
 
-    analysis_queued = len(result.imported_game_ids) if request.analyze else 0
+    queued_ids = (
+        tuple(game_id for game_id in result.imported_game_ids if reserve_analysis(game_id))
+        if request.analyze
+        else ()
+    )
+    analysis_queued = len(queued_ids)
     if analysis_queued:
         background_tasks.add_task(
-            analyze_games_background,
-            result.imported_game_ids,
+            _run_reserved_batch,
+            queued_ids,
             stockfish_factory,
         )
-        logger.info("Queued analysis for game IDs %s", result.imported_game_ids)
+        logger.info("Queued analysis for game IDs %s", queued_ids)
     logger.info(
         "Chess.com import: requested=%s imported=%s duplicates=%s invalid=%s examined=%s",
         result.requested,

@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import type { AnalyzeGameResponse, GamesListResponse, GamesQuery } from "./types";
+import type { AnalyzeGameResponse, GameDetailResponse, GameMovesResponse, GamesListResponse, GamesQuery } from "./types";
 
 export function fetchGames(
   params: GamesQuery = {},
@@ -18,4 +18,12 @@ export function fetchGames(
 
 export function queueGameAnalysis(gameId: number, signal?: AbortSignal): Promise<AnalyzeGameResponse> {
   return apiFetch<AnalyzeGameResponse>(`/api/games/${gameId}/analyze`, { method: "POST", signal });
+}
+
+export function fetchGameDetail(gameId: number, signal?: AbortSignal): Promise<GameDetailResponse> {
+  return apiFetch<GameDetailResponse>(`/api/games/${gameId}`, { cache: "no-store", signal });
+}
+
+export function fetchGameMoves(gameId: number, signal?: AbortSignal): Promise<GameMovesResponse> {
+  return apiFetch<GameMovesResponse>(`/api/games/${gameId}/moves`, { cache: "no-store", signal });
 }

@@ -125,3 +125,19 @@ def test_moves_all_plies_sorted_and_analyze_queued(api_app, api_client, monkeypa
     assert response.json() == {"game_id": first_id, "status": "queued"}
     assert queued == [first_id]
     assert api_client.post("/api/games/9999/analyze").status_code == 404
+
+
+def test_analyzing_game_is_not_queued_twice(api_app, api_client, monkeypatch) -> None:
+    session = api_app.state.testing_session_factory()
+    game = add_game(session, "busy", status=AnalysisStatus.ANALYZING)
+    session.commit()
+    game_id = game.id
+    session.close()
+    queued = []
+    monkeypatch.setattr(games_api, "analyze_game_background", lambda *args: queued.append(args))
+
+    response = api_client.post(f"/api/games/{game_id}/analyze")
+
+    assert response.status_code == 202
+    assert response.json() == {"game_id": game_id, "status": "already_analyzing"}
+    assert queued == []

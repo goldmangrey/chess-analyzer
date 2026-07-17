@@ -1,11 +1,12 @@
 import { cn } from "@/lib/cn";
 
-export type EngineStatus = "ready" | "unavailable" | "analyzing";
+export type EngineStatus = "ready" | "degraded" | "unavailable" | "analyzing";
 export type EngineStatusProps = { status?: EngineStatus };
 
 const content = {
-  ready: { label: "Локальный backend готов", compact: "Backend готов", dot: "bg-best" },
-  analyzing: { label: "Backend обрабатывает задачу", compact: "В работе", dot: "bg-inaccuracy" },
+  ready: { label: "Локальный движок готов", compact: "Движок готов", dot: "bg-best" },
+  degraded: { label: "Требуется настройка", compact: "Настройка", dot: "bg-inaccuracy" },
+  analyzing: { label: "Анализируется", compact: "В работе", dot: "bg-inaccuracy" },
   unavailable: { label: "Backend недоступен", compact: "Нет backend", dot: "bg-blunder" },
 };
 

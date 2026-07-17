@@ -1,5 +1,7 @@
 import { AnalyzeGameButton } from "./analyze-game-button";
 
+import { ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 import { StatusPill } from "@/components/ui";
 import type { ApiGameListItem } from "@/lib/api/types";
 import { formatCpLoss, formatDate } from "@/lib/format";
@@ -11,7 +13,7 @@ export function GameCard({ game }: { game: ApiGameListItem }) {
   return (
     <article className="rounded-[1.5rem] bg-surface p-5 shadow-[var(--shadow-soft)]">
       <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0"><div className="flex items-center gap-2"><span aria-hidden="true" className={game.user_color === "white" ? "size-3 rounded-sm border border-[var(--border-strong)] bg-white" : "size-3 rounded-sm bg-surface-dark"} /><h2 className="truncate text-lg font-semibold tracking-[-0.025em]">vs {game.opponent_username}</h2></div><p className="mt-2 text-xs text-text-muted">{formatDate(game.played_at)} · {game.time_control ?? "Контроль не указан"}</p></div>
+        <div className="min-w-0"><div className="flex items-center gap-2"><span aria-hidden="true" className={game.user_color === "white" ? "size-3 rounded-sm border border-[var(--border-strong)] bg-white" : "size-3 rounded-sm bg-surface-dark"} /><h2 className="truncate text-lg font-semibold tracking-[-0.025em]"><Link href={`/games/${game.id}`} className="focus-ring group/link inline-flex items-center gap-1 rounded-lg hover:text-forest">vs {game.opponent_username}<ArrowUpRight aria-hidden="true" size={15} className="transition group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5" /></Link></h2></div><p className="mt-2 text-xs text-text-muted">{formatDate(game.played_at)} · {game.time_control ?? "Контроль не указан"}</p></div>
         <strong className={`text-sm ${resultClasses[game.result]}`}>{gameResultLabel(game.result)}</strong>
       </div>
       <div className="mt-5 rounded-2xl bg-surface-muted p-4"><p className="text-xs font-bold text-forest-light">{game.opening_code ?? "—"}</p><p className="mt-1 text-sm">{game.opening_name ?? "Дебют не определён"}</p></div>

@@ -17,6 +17,8 @@ class Settings(BaseSettings):
         populate_by_name=True,
     )
 
+    app_env: str = Field(default="development", validation_alias="APP_ENV")
+
     database_url: str = Field(
         default="sqlite:///./data/chess.db",
         validation_alias="DATABASE_URL",
@@ -56,7 +58,7 @@ class Settings(BaseSettings):
         validation_alias="FRONTEND_ORIGIN",
     )
 
-    @field_validator("chesscom_user_agent", "frontend_origin")
+    @field_validator("app_env", "chess_username", "chesscom_user_agent", "frontend_origin")
     @classmethod
     def validate_non_empty(cls, value: str) -> str:
         if not value.strip():

@@ -20,7 +20,7 @@ export function RecentGamesCard({ games }: { games: RecentGameStats[] }) {
       ) : (
         <div className="mt-6 divide-y divide-[var(--border-subtle)]">
           {games.map((game) => (
-            <div key={game.game_id} className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1.4fr)_auto_auto] sm:items-center">
+            <Link href={`/games/${game.game_id}`} key={game.game_id} className="focus-ring group grid gap-3 rounded-xl py-4 transition hover:bg-surface-muted sm:grid-cols-[minmax(0,1.4fr)_auto_auto] sm:items-center sm:px-2">
               <div className="min-w-0">
                 <div className="flex items-center gap-2"><span aria-hidden="true" className={game.user_color === "white" ? "size-3 rounded-sm border border-[var(--border-strong)] bg-white" : "size-3 rounded-sm bg-surface-dark"} /><p className="truncate text-sm font-semibold">vs {game.opponent_username}</p></div>
                 <p className="mt-1 truncate text-xs text-text-muted">{game.opening_code ? `${game.opening_code} · ` : ""}{game.opening_name ?? "Дебют не определён"} · {formatDate(game.played_at)}</p>
@@ -32,9 +32,9 @@ export function RecentGamesCard({ games }: { games: RecentGameStats[] }) {
               </div>
               <div className="flex items-center justify-between gap-2 sm:justify-end">
                 <StatusPill tone={analysisStatusTone(game.analysis_status)} dot>{analysisStatusLabel(game.analysis_status)}</StatusPill>
-                <ArrowUpRight aria-hidden="true" size={16} className="text-text-muted" />
+                <ArrowUpRight aria-hidden="true" size={16} className="text-text-muted transition group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

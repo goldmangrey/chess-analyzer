@@ -1,18 +1,5 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Manrope } from "next/font/google";
 import "./globals.css";
-
-const manrope = Manrope({
-  variable: "--font-sans",
-  subsets: ["cyrillic", "latin"],
-  display: "swap",
-});
-
-const jetBrainsMono = JetBrains_Mono({
-  variable: "--font-mono",
-  subsets: ["cyrillic", "latin"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "Chess AI Teacher",
@@ -26,10 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="ru"
-      className={`${manrope.variable} ${jetBrainsMono.variable}`}
-    >
+    <html lang="ru">
       <body>{children}</body>
     </html>
   );

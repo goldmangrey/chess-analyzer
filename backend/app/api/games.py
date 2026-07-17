@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.background_tasks import analyze_game_background
+from app.background_tasks import analyze_game_background, release_analysis, reserve_analysis
 from app.dependencies import StockfishFactory, get_database_session, get_stockfish_factory
 from app.models import AnalysisStatus, GameResult
 from app.repositories.games_repository import (
@@ -29,6 +29,13 @@ from app.services.analysis_service import GameNotFoundError
 
 
 router = APIRouter(prefix="/api/games", tags=["games"])
+
+
+def _run_reserved_analysis(game_id: int, stockfish_factory: StockfishFactory) -> None:
+    try:
+        analyze_game_background(game_id, stockfish_factory)
+    finally:
+        release_analysis(game_id)
 
 
 def _require_game(session: Session, game_id: int):
@@ -160,6 +167,8 @@ def queue_game_analysis(
     session: Session = Depends(get_database_session),
     stockfish_factory: StockfishFactory = Depends(get_stockfish_factory),
 ) -> AnalyzeGameResponse:
-    _require_game(session, game_id)
-    background_tasks.add_task(analyze_game_background, game_id, stockfish_factory)
+    game = _require_game(session, game_id)
+    if game.analysis_status is AnalysisStatus.ANALYZING or not reserve_analysis(game_id):
+        return AnalyzeGameResponse(game_id=game_id, status="already_analyzing")
+    background_tasks.add_task(_run_reserved_analysis, game_id, stockfish_factory)
     return AnalyzeGameResponse(game_id=game_id, status="queued")

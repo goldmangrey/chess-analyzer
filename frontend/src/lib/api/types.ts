@@ -134,4 +134,60 @@ export type GamesQuery = {
   sort?: GamesSort;
 };
 
-export type AnalyzeGameResponse = { game_id: number; status: "queued" };
+export type AnalyzeGameResponse = { game_id: number; status: "queued" | "already_analyzing" };
+
+export type SystemStatus = {
+  status: "ready" | "degraded";
+  backend: "ready";
+  database: { status: "ready" | "unavailable"; path: string; writable: boolean; tables_ready: boolean };
+  stockfish: { status: "ready" | "unavailable"; path: string; executable: boolean };
+  chesscom: { configured: boolean; user_agent_configured: boolean };
+};
+
+export type GameDetailResponse = {
+  id: number;
+  external_id: string;
+  platform: string;
+  played_at: string | null;
+  white_username: string;
+  black_username: string;
+  white_rating: number | null;
+  black_rating: number | null;
+  user_color: UserColor;
+  result: GameResult;
+  opening_code: string | null;
+  opening_name: string | null;
+  time_control: string | null;
+  pgn: string;
+  analysis_status: AnalysisStatus;
+  average_cp_loss: number | null;
+  inaccuracies: number;
+  mistakes: number;
+  blunders: number;
+};
+
+export type MoveAnalysis = {
+  id: number;
+  game_id: number;
+  ply: number;
+  move_number: number;
+  player_color: UserColor;
+  is_user_move: boolean;
+  fen_before: string;
+  played_move_uci: string;
+  played_move_san: string | null;
+  best_move_uci: string | null;
+  best_move_san: string | null;
+  evaluation_before_cp: number | null;
+  evaluation_after_cp: number | null;
+  centipawn_loss: number;
+  classification: MoveClassification;
+  principal_variation: string | null;
+  created_at: string;
+};
+
+export type GameMovesResponse = {
+  game_id: number;
+  analysis_status: AnalysisStatus;
+  items: MoveAnalysis[];
+};
