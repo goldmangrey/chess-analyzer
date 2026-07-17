@@ -22,10 +22,12 @@
   --best: #25875a;
   --best-surface: #e6f7ed;
   --inaccuracy: #e2b93b;
+  --inaccuracy-text: #856913;
   --inaccuracy-surface: #fff7d9;
   --mistake: #f09145;
   --mistake-surface: #fff0e4;
   --blunder: #e95d5d;
+  --blunder-text: #a43d3d;
   --blunder-surface: #ffeaea;
   --border-subtle: rgba(23, 23, 23, 0.08);
   --border-strong: rgba(23, 23, 23, 0.15);
@@ -55,10 +57,12 @@
   --color-best: var(--best);
   --color-best-surface: var(--best-surface);
   --color-inaccuracy: var(--inaccuracy);
+  --color-inaccuracy-text: var(--inaccuracy-text);
   --color-inaccuracy-surface: var(--inaccuracy-surface);
   --color-mistake: var(--mistake);
   --color-mistake-surface: var(--mistake-surface);
   --color-blunder: var(--blunder);
+  --color-blunder-text: var(--blunder-text);
   --color-blunder-surface: var(--blunder-surface);
 }
 
@@ -174,9 +178,27 @@ textarea {
   background-clip: padding-box;
 }
 
+.select-chevron {
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 13px) 50%;
+  background-repeat: no-repeat;
+  background-size: 5px 5px;
+}
+
 @keyframes skeleton-shimmer {
   to {
     background-position-x: -220%;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
   }
 }
 

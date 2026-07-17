@@ -18,8 +18,8 @@ export type StatusPillProps = HTMLAttributes<HTMLSpanElement> & {
 const toneClasses: Record<StatusPillTone, string> = {
   neutral: "bg-black/[0.055] text-text-secondary",
   success: "bg-best-surface text-best",
-  warning: "bg-inaccuracy-surface text-[#856913]",
-  danger: "bg-blunder-surface text-[#a43d3d]",
+  warning: "bg-inaccuracy-surface text-inaccuracy-text",
+  danger: "bg-blunder-surface text-blunder-text",
   info: "bg-mint-surface text-forest-light",
   dark: "bg-surface-dark text-text-on-dark",
 };
