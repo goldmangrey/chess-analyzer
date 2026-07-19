@@ -1,40 +1,30 @@
 from collections.abc import Generator
-from pathlib import Path
 import logging
+import threading
 
-from sqlalchemy import Engine, MetaData, create_engine, event, inspect
-from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy import Engine, create_engine, event, inspect
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import Settings, get_settings
-from app.database_url import database_backend, normalize_database_url, resolve_database_url
+from app.database_url import database_backend, resolve_database_url
+from app.db.base import Base
 
 
 logger = logging.getLogger(__name__)
-NAMING_CONVENTION = {
-    "ix": "ix_%(column_0_label)s",
-    "uq": "uq_%(table_name)s_%(column_0_name)s",
-    "ck": "%(constraint_name)s",
-    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
-    "pk": "pk_%(table_name)s",
-}
 REQUIRED_TABLES = {"games", "move_analysis", "app_settings"}
 ALEMBIC_HEAD = "0001_initial_schema"
-
-
-class Base(DeclarativeBase):
-    metadata = MetaData(naming_convention=NAMING_CONVENTION)
 
 
 def create_database_engine(database_url: str, *, settings: Settings | None = None) -> Engine:
     normalized_url = resolve_database_url(database_url)
     backend = database_backend(normalized_url)
-    active = settings or get_settings()
+    active = settings
     engine_options = {"connect_args": {"check_same_thread": False, "timeout": 30}} if backend == "sqlite" else {
         "pool_pre_ping": True,
-        "pool_size": active.db_pool_size,
-        "max_overflow": active.db_max_overflow,
-        "pool_timeout": active.db_pool_timeout,
-        "pool_recycle": active.db_pool_recycle,
+        "pool_size": active.db_pool_size if active else 5,
+        "max_overflow": active.db_max_overflow if active else 5,
+        "pool_timeout": active.db_pool_timeout if active else 30,
+        "pool_recycle": active.db_pool_recycle if active else 1800,
     }
     database_engine = create_engine(normalized_url, **engine_options)
 
@@ -57,22 +47,66 @@ def create_database_engine(database_url: str, *, settings: Settings | None = Non
     return database_engine
 
 
-engine = create_database_engine(get_settings().database_url)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+_runtime_lock = threading.RLock()
+_runtime_engine: Engine | None = None
+_runtime_session_factory: sessionmaker[Session] | None = None
+
+
+def create_session_factory(bind: Engine) -> sessionmaker[Session]:
+    return sessionmaker(bind=bind, autoflush=False, expire_on_commit=False)
+
+
+def get_engine(settings: Settings | None = None) -> Engine:
+    global _runtime_engine
+    if _runtime_engine is None:
+        with _runtime_lock:
+            if _runtime_engine is None:
+                active = settings or get_settings()
+                _runtime_engine = create_database_engine(
+                    active.database_url, settings=active
+                )
+    return _runtime_engine
+
+
+def get_session_factory(settings: Settings | None = None) -> sessionmaker[Session]:
+    global _runtime_session_factory
+    if _runtime_session_factory is None:
+        with _runtime_lock:
+            if _runtime_session_factory is None:
+                _runtime_session_factory = create_session_factory(get_engine(settings))
+    return _runtime_session_factory
+
+
+def dispose_database_engine() -> None:
+    global _runtime_engine, _runtime_session_factory
+    with _runtime_lock:
+        if _runtime_engine is not None:
+            _runtime_engine.dispose()
+        _runtime_engine = None
+        _runtime_session_factory = None
 
 
 def get_db() -> Generator[Session, None, None]:
-    database_session = SessionLocal()
+    database_session = get_session_factory()()
     try:
         yield database_session
     finally:
         database_session.close()
 
 
-def init_db(*, bind: Engine = engine, auto_create_schema: bool | None = None) -> None:
+def init_db(
+    *,
+    bind: Engine | None = None,
+    auto_create_schema: bool | None = None,
+    settings: Settings | None = None,
+) -> None:
     from app import models  # noqa: F401
 
-    enabled = get_settings().auto_create_schema if auto_create_schema is None else auto_create_schema
+    active = settings
+    if bind is None:
+        active = active or get_settings()
+        bind = get_engine(active)
+    enabled = (active or get_settings()).auto_create_schema if auto_create_schema is None else auto_create_schema
     backend = database_backend(str(bind.url))
     logger.info("Initializing database backend=%s auto_create_schema=%s", backend, enabled)
     if enabled:

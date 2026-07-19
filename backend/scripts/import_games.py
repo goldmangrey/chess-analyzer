@@ -5,7 +5,7 @@ import sys
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import Settings, get_settings
-from app.database import SessionLocal, init_db
+from app.database import get_session_factory, init_db
 from app.services.chesscom_client import ChessComClient, ChessComError
 from app.services.game_importer import ImportGamesResult, import_recent_games
 
@@ -14,12 +14,13 @@ def main(
     argv: Sequence[str] | None = None,
     *,
     settings: Settings | None = None,
-    session_factory=SessionLocal,
+    session_factory=None,
     client_factory: Callable[[str], ChessComClient] | None = None,
     init_database: Callable[[], None] = init_db,
     importer: Callable[..., ImportGamesResult] = import_recent_games,
 ) -> int:
     active_settings = settings or get_settings()
+    active_session_factory = session_factory or get_session_factory(active_settings)
     parser = argparse.ArgumentParser(description="Import recent Chess.com games")
     parser.add_argument("--username", default=active_settings.chess_username)
     parser.add_argument("--limit", type=int, default=active_settings.import_games_limit)
@@ -29,7 +30,7 @@ def main(
     client = None
     try:
         init_database()
-        session = session_factory()
+        session = active_session_factory()
         factory = client_factory or (lambda user_agent: ChessComClient(user_agent))
         client = factory(active_settings.chesscom_user_agent)
         result = importer(session, client, args.username, args.limit)

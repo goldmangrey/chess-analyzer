@@ -2,7 +2,7 @@ from collections.abc import Callable, Sequence
 import logging
 import threading
 
-from app.database import SessionLocal
+from app.database import get_session_factory
 from app.dependencies import StockfishFactory
 from app.services.analysis_service import analyze_game
 
@@ -30,10 +30,11 @@ def analyze_game_background(
     game_id: int,
     stockfish_factory: StockfishFactory,
     *,
-    session_factory=SessionLocal,
+    session_factory=None,
     analyzer: Callable = analyze_game,
 ) -> None:
-    session = session_factory()
+    active_session_factory = session_factory or get_session_factory()
+    session = active_session_factory()
     try:
         logger.info("Background analysis started for game %s", game_id)
         result = analyzer(session, game_id, stockfish_factory)

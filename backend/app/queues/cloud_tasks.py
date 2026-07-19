@@ -5,17 +5,17 @@ from google.api_core.exceptions import AlreadyExists
 from google.cloud import tasks_v2
 from google.protobuf import duration_pb2
 
-from app.database import SessionLocal
+from app.database import get_session_factory
 from app.queues.base import AnalysisEnqueueResult
 from app.queues.errors import QueueEnqueueError
 from app.services.analysis_queue_service import mark_enqueue_failed, reserve_analysis_committed
 
 
 class CloudTasksAnalysisQueue:
-    def __init__(self, settings, *, client=None, session_factory=SessionLocal):
+    def __init__(self, settings, *, client=None, session_factory=None):
         self.settings = settings
         self._client = client
-        self.session_factory = session_factory
+        self.session_factory = session_factory or get_session_factory(settings)
 
     @property
     def client(self):

@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import games, import_games, internal_sync, internal_tasks, settings as settings_api, stats, sync, system
 from app.config import Settings, get_settings
-from app.database import init_db
+from app.database import dispose_database_engine, init_db
 from app.exceptions import register_exception_handlers
 
 
@@ -25,7 +25,10 @@ def create_app(
 ) -> FastAPI:
     active_settings = settings or get_settings()
     if init_database is init_db:
-        init_database = lambda: init_db(auto_create_schema=active_settings.auto_create_schema)
+        init_database = lambda: init_db(
+            auto_create_schema=active_settings.auto_create_schema,
+            settings=active_settings,
+        )
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
@@ -33,8 +36,7 @@ def create_app(
         init_database()
         logger.info("Database schema initialized")
         yield
-        from app.database import engine
-        engine.dispose()
+        dispose_database_engine()
 
     application = FastAPI(
         title="Chess AI Teacher API",

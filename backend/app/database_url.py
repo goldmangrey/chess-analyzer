@@ -3,10 +3,8 @@ from typing import Literal
 
 from sqlalchemy.engine import make_url
 
-from app.config import BACKEND_DIR
-
-
 DatabaseBackend = Literal["sqlite", "postgresql"]
+BACKEND_DIR = Path(__file__).resolve().parent.parent
 
 
 class UnsupportedDatabaseError(ValueError):

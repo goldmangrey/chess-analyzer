@@ -5,7 +5,7 @@ import sys
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.config import Settings, get_settings
-from app.database import SessionLocal, init_db
+from app.database import get_session_factory, init_db
 from app.models import AnalysisStatus, Game
 from app.repositories.games_repository import (
     get_game_by_id,
@@ -23,11 +23,12 @@ def main(
     argv: Sequence[str] | None = None,
     *,
     settings: Settings | None = None,
-    session_factory=SessionLocal,
+    session_factory=None,
     init_database: Callable[[], None] = init_db,
     analyzer: Callable[..., AnalysisResult] = analyze_game,
 ) -> int:
     active_settings = settings or get_settings()
+    active_session_factory = session_factory or get_session_factory(active_settings)
     parser = argparse.ArgumentParser(description="Analyze games with local Stockfish")
     selection = parser.add_mutually_exclusive_group(required=True)
     selection.add_argument("--pending", action="store_true")
@@ -42,7 +43,7 @@ def main(
     completed = failed = 0
     try:
         init_database()
-        session = session_factory()
+        session = active_session_factory()
         games: list[Game]
         if args.game_id is not None:
             game = get_game_by_id(session, args.game_id)

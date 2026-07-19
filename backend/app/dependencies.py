@@ -5,7 +5,7 @@ from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import Settings, get_settings
-from app.database import engine, get_db
+from app.database import get_db, get_engine
 from app.services.chesscom_client import ChessComClient
 from app.services.stockfish_service import StockfishService
 from app.queues.factory import create_analysis_queue
@@ -15,7 +15,7 @@ StockfishFactory = Callable[[], StockfishService]
 
 
 def get_database_engine() -> Engine:
-    return engine
+    return get_engine()
 
 
 def get_settings_dependency() -> Settings:
