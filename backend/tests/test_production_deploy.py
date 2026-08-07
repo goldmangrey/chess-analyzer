@@ -142,7 +142,10 @@ def test_apply_contract_and_data_flow(tmp_path: Path) -> None:
     assert "ANALYSIS_WORKER_URL=https://chess-ai-worker-test.run.app" in log
     assert "_BACKEND_URL=https://chess-ai-backend-test.run.app" in log
     assert f"_IMAGE={frontend_image}" in log
-    assert "FRONTEND_ORIGINS=https://chess-ai-frontend-test.run.app" in log
+    assert (
+        "FRONTEND_ORIGINS=https://chess-ai-frontend-test.run.app,http://localhost:3000,"
+        "http://127.0.0.1:3000"
+    ) in log.replace("\\,", ",")
     scheduler_line = next(
         line for line in log.splitlines()
         if "scheduler jobs update http" in line and "--help" not in line
