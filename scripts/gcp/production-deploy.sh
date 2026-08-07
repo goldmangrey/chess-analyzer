@@ -248,7 +248,7 @@ step_frontend() {
   require_https_url "$FRONTEND_URL"
   export FRONTEND_URL
 }
-step_cors() { FRONTEND_ORIGINS="$FRONTEND_URL" "$SCRIPT_DIR/deploy-backend.sh" --apply; }
+step_cors() { FRONTEND_ORIGINS="$FRONTEND_URL,$EXTRA_FRONTEND_ORIGINS" "$SCRIPT_DIR/deploy-backend.sh" --apply; }
 step_smoke_test() { "$SCRIPT_DIR/smoke-test.sh" --apply; }
 
 do_step validate step_validate
