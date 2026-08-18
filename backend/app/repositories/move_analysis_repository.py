@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from sqlalchemy import case, delete, func, select
 from sqlalchemy.orm import Session
 
-from app.models import MoveAnalysis, MoveClassification
+from app.models import GamePhase, MoveAnalysis, MoveClassification
 from app.schemas import MoveAnalysisCreate
 
 
@@ -17,6 +17,18 @@ class PersonalMoveAggregates:
     mistakes_count: int
     blunders_count: int
     total_cp_loss: int
+
+
+@dataclass(frozen=True)
+class PhaseMoveAggregates:
+    phase: GamePhase
+    start_ply: int
+    end_ply: int
+    user_moves: int
+    average_cp_loss: float | None
+    inaccuracies: int
+    mistakes: int
+    blunders: int
 
 
 def create_move_analysis(
@@ -125,3 +137,51 @@ def get_classification_counts(
 
     found = {classification.value: count for classification, count in session.execute(statement)}
     return {classification.value: int(found.get(classification.value, 0)) for classification in MoveClassification}
+
+
+def get_phase_aggregates(
+    session: Session,
+    game_id: int,
+) -> tuple[PhaseMoveAggregates, ...]:
+    is_user = MoveAnalysis.is_user_move.is_(True)
+    statement = (
+        select(
+            MoveAnalysis.phase,
+            func.min(MoveAnalysis.ply),
+            func.max(MoveAnalysis.ply),
+            func.sum(case((is_user, 1), else_=0)),
+            func.avg(case((is_user, MoveAnalysis.centipawn_loss))),
+            *[
+                func.sum(
+                    case(
+                        (
+                            is_user & (MoveAnalysis.classification == classification),
+                            1,
+                        ),
+                        else_=0,
+                    )
+                )
+                for classification in (
+                    MoveClassification.INACCURACY,
+                    MoveClassification.MISTAKE,
+                    MoveClassification.BLUNDER,
+                )
+            ],
+        )
+        .where(MoveAnalysis.game_id == game_id, MoveAnalysis.phase.is_not(None))
+        .group_by(MoveAnalysis.phase)
+        .order_by(func.min(MoveAnalysis.ply))
+    )
+    return tuple(
+        PhaseMoveAggregates(
+            phase=GamePhase(row[0]),
+            start_ply=int(row[1]),
+            end_ply=int(row[2]),
+            user_moves=int(row[3]),
+            average_cp_loss=float(row[4]) if row[4] is not None else None,
+            inaccuracies=int(row[5]),
+            mistakes=int(row[6]),
+            blunders=int(row[7]),
+        )
+        for row in session.execute(statement)
+    )

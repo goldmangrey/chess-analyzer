@@ -6,6 +6,8 @@ import chess.pgn
 from app.models import Color, Game
 from app.schemas import MoveAnalysisCreate
 from app.services.move_classifier import calculate_centipawn_loss, classify_move
+from app.services.game_phase_detector import GamePhaseDetector
+from app.services.opening_resolver import known_opening_ply
 from app.services.stockfish_service import StockfishError, StockfishService
 
 
@@ -33,13 +35,16 @@ def analyze_game_moves(
         raise GameAnalysisError("Saved PGN is missing players or a completed result")
 
     board = parsed_game.board()
+    mainline_moves = tuple(parsed_game.mainline_moves())
+    phase_detector = GamePhaseDetector(known_opening_end_ply=known_opening_ply(mainline_moves))
     analyses: list[MoveAnalysisCreate] = []
     try:
-        for ply, move in enumerate(parsed_game.mainline_moves(), start=1):
+        for ply, move in enumerate(mainline_moves, start=1):
             player_color = Color.WHITE if board.turn == chess.WHITE else Color.BLACK
             fen_before = board.fen()
             move_number = board.fullmove_number
             played_move_san = board.san(move)
+            phase = phase_detector.detect(board, ply)
             before = stockfish.analyze_position(board)
             board.push(move)
             after = stockfish.analyze_position(board)
@@ -64,6 +69,7 @@ def analyze_game_moves(
                     evaluation_after_cp=after.evaluation_cp,
                     centipawn_loss=cp_loss,
                     classification=classify_move(cp_loss),
+                    phase=phase,
                     principal_variation=" ".join(before.principal_variation) or None,
                 )
             )

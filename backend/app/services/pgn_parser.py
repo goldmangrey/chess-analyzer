@@ -6,6 +6,7 @@ import chess
 import chess.pgn
 
 from app.models import Color, GameResult
+from app.services.opening_resolver import resolve_opening
 
 
 class PgnParseError(ValueError):
@@ -122,9 +123,10 @@ def parse_pgn(
     user_color = Color.WHITE if matches_white else Color.BLACK
 
     board = game.board()
+    mainline_moves = tuple(game.mainline_moves())
     parsed_moves: list[ParsedPgnMove] = []
     try:
-        for ply, move in enumerate(game.mainline_moves(), start=1):
+        for ply, move in enumerate(mainline_moves, start=1):
             parsed_moves.append(
                 ParsedPgnMove(
                     ply=ply,
@@ -139,6 +141,13 @@ def parse_pgn(
     except (ValueError, AssertionError) as error:
         raise PgnParseError(f"Unable to traverse PGN mainline: {error}") from error
 
+    opening = resolve_opening(
+        mainline_moves,
+        eco=_optional_header(headers, "ECO"),
+        opening_name=_optional_header(headers, "Opening"),
+        eco_url=_optional_header(headers, "ECOUrl"),
+    )
+
     return ParsedPgnGame(
         external_id=external_id,
         platform=platform,
@@ -150,8 +159,8 @@ def parse_pgn(
         user_color=user_color,
         result=_user_result(user_color, result_header),
         time_control=_optional_header(headers, "TimeControl"),
-        opening_code=_optional_header(headers, "ECO"),
-        opening_name=_optional_header(headers, "Opening"),
+        opening_code=opening.eco,
+        opening_name=opening.name,
         pgn=pgn,
         moves=tuple(parsed_moves),
     )

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import type { GameDetailResponse, MoveAnalysis } from "@/lib/api/types";
+import type { MoveAnalysis, UserColor } from "@/lib/api/types";
 import { fenForSelectedPly } from "@/lib/chess-position";
 
 import { ChessBoardPanel } from "./chess-board-panel";
@@ -10,7 +10,7 @@ import { EvaluationTimeline } from "./evaluation-timeline";
 import { MoveDetailsCard } from "./move-details-card";
 import { MoveList } from "./move-list";
 
-export function AnalysisWorkspace({ game, moves }: { game: GameDetailResponse; moves: MoveAnalysis[] }) {
+export function AnalysisWorkspace({ userColor, moves }: { userColor: UserColor; moves: MoveAnalysis[] }) {
   const [selectedPly, setSelectedPly] = useState(0);
   const total = moves.length;
   const selectedMove = useMemo(() => selectedPly > 0 ? moves.find((move) => move.ply === selectedPly) ?? null : null, [moves, selectedPly]);
@@ -37,7 +37,7 @@ export function AnalysisWorkspace({ game, moves }: { game: GameDetailResponse; m
   return (
     <div className="mt-6 space-y-6">
       <div className="grid gap-6 xl:grid-cols-[minmax(0,7fr)_minmax(340px,5fr)] xl:items-start">
-        <ChessBoardPanel fen={fen} orientation={game.user_color} move={selectedMove} evaluation={evaluation} selectedPly={selectedPly} total={total} onSelect={selectPly} />
+        <ChessBoardPanel fen={fen} orientation={userColor} move={selectedMove} evaluation={evaluation} selectedPly={selectedPly} total={total} onSelect={selectPly} />
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-1"><MoveList moves={moves} selectedPly={selectedPly} onSelect={selectPly} /><MoveDetailsCard move={selectedMove} /></div>
       </div>
       <EvaluationTimeline moves={moves} selectedPly={selectedPly} onSelect={selectPly} />

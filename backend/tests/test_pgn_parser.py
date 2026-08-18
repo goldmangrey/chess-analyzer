@@ -74,7 +74,7 @@ def test_metadata_parsing_and_optional_values() -> None:
     assert parsed.played_at == datetime(2026, 7, 16, 12, 34, 56, tzinfo=timezone.utc)
     assert parsed.white_rating == 1800
     assert parsed.black_rating is None
-    assert (parsed.opening_code, parsed.opening_name) == ("C20", "King's Pawn Game")
+    assert (parsed.opening_code, parsed.opening_name) == ("C44", "King's Knight Opening: Normal Variation")
     assert parsed.time_control == "600+5"
 
 
@@ -83,9 +83,33 @@ def test_partial_date_and_missing_optional_headers() -> None:
     parsed = parse_pgn(raw, "Yeskendir", "id")
     assert parsed.played_at is None
     assert parsed.white_rating is None
-    assert parsed.opening_code is None
-    assert parsed.opening_name is None
+    assert parsed.opening_code == "C44"
+    assert parsed.opening_name == "King's Knight Opening: Normal Variation"
     assert parsed.time_control is None
+
+
+def test_opening_is_resolved_from_moves_without_opening_or_eco_url_headers() -> None:
+    parsed = parse_pgn(
+        pgn_fixture(extra='[ECO "B13"]', moves="1. e4 c6 2. d4 d5 3. exd5 cxd5"),
+        "Yeskendir",
+        "id",
+    )
+    assert (parsed.opening_code, parsed.opening_name) == (
+        "B13",
+        "Caro-Kann Defense: Exchange Variation",
+    )
+
+
+def test_chesscom_eco_url_is_only_a_canonicalized_fallback() -> None:
+    parsed = parse_pgn(
+        pgn_fixture(
+            extra='[ECO "A00"]\n[ECOUrl "https://www.chess.com/openings/Grob-Opening-Grob-Gambit-with-2-Bg2"]',
+            moves="",
+        ),
+        "Yeskendir",
+        "id",
+    )
+    assert parsed.opening_name == "Grob Opening: Grob Gambit"
 
 
 def test_mainline_moves_include_pre_move_position_san_uci_and_no_variation() -> None:

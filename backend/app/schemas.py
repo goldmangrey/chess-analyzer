@@ -4,7 +4,17 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator
 
-from app.models import AnalysisStatus, Color, GameResult, MoveClassification, SyncStatus
+from app.models import (
+    AnalysisStatus,
+    Color,
+    CriticalMomentType,
+    ErrorConfidence,
+    ErrorType,
+    GamePhase,
+    GameResult,
+    MoveClassification,
+    SyncStatus,
+)
 
 
 class CreateSchema(BaseModel):
@@ -30,6 +40,7 @@ class MoveAnalysisCreate(CreateSchema):
     evaluation_after_cp: int | None = None
     centipawn_loss: int = Field(ge=0)
     classification: MoveClassification
+    phase: GamePhase | None = None
     principal_variation: str | None = None
 
 
@@ -49,6 +60,7 @@ class MoveAnalysisRead(ReadSchema):
     evaluation_after_cp: int | None
     centipawn_loss: int
     classification: MoveClassification
+    phase: GamePhase | None
     principal_variation: str | None
     created_at: datetime
 
@@ -252,6 +264,100 @@ class GamesListResponse(ApiSchema):
     total: int
 
 
+class GamePhaseStatistics(ApiSchema):
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
+
+    start_ply: int
+    end_ply: int
+    user_moves: int
+    average_cp_loss: float | None
+    inaccuracies: int
+    mistakes: int
+    blunders: int
+
+
+class CriticalMomentResponse(ApiSchema):
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
+
+    ply: int
+    move_number: int
+    move_san: str | None
+    move_uci: str
+    phase: GamePhase | None
+    type: CriticalMomentType
+    severity: MoveClassification
+    centipawn_loss: int
+    evaluation_before: int
+    evaluation_after: int
+    evaluation_before_user_pov: int
+    evaluation_after_user_pov: int
+    importance_score: float
+
+
+class ErrorClassificationResponse(ApiSchema):
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
+
+    ply: int
+    move_number: int
+    move_san: str | None
+    phase: GamePhase | None
+    severity: MoveClassification
+    primary_type: ErrorType | None
+    secondary_types: tuple[ErrorType, ...]
+    confidence: ErrorConfidence
+    centipawn_loss: int
+    critical_moment_type: CriticalMomentType | None
+
+
+class IntelligenceSchema(ApiSchema):
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
+
+
+class IntelligenceAnalysisResponse(IntelligenceSchema):
+    status: AnalysisStatus
+    intelligence_ready: bool
+
+
+class IntelligenceGameResponse(IntelligenceSchema):
+    id: int
+    external_id: str
+    platform: str
+    played_at: datetime | None
+    result: GameResult
+    user_color: Color
+    opponent: str
+    white_username: str
+    black_username: str
+    white_rating: int | None
+    black_rating: int | None
+    time_control: str | None
+
+
+class IntelligenceOpeningResponse(IntelligenceSchema):
+    eco: str | None
+    name: str | None
+
+
+class IntelligenceSummaryResponse(IntelligenceSchema):
+    average_cp_loss: float | None
+    user_moves: int
+    inaccuracies: int
+    mistakes: int
+    blunders: int
+
+
+class GameIntelligenceResponse(IntelligenceSchema):
+    intelligence_version: str
+    analysis: IntelligenceAnalysisResponse
+    game: IntelligenceGameResponse
+    opening: IntelligenceOpeningResponse
+    summary: IntelligenceSummaryResponse | None
+    phases: dict[GamePhase, GamePhaseStatistics]
+    critical_moments: tuple[CriticalMomentResponse, ...]
+    errors: tuple[ErrorClassificationResponse, ...]
+    error_breakdown: dict[ErrorType, int]
+
+
 class GameDetailResponse(ApiSchema):
     id: int
     external_id: str
@@ -272,6 +378,9 @@ class GameDetailResponse(ApiSchema):
     inaccuracies: int
     mistakes: int
     blunders: int
+    phases: dict[GamePhase, GamePhaseStatistics]
+    critical_moments: tuple[CriticalMomentResponse, ...]
+    errors: tuple[ErrorClassificationResponse, ...]
 
 
 class GameMovesResponse(ApiSchema):

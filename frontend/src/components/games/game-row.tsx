@@ -31,7 +31,7 @@ export function GameRow({ game }: { game: ApiGameListItem }) {
         </div>
       </td>
       <td className="px-3 py-4"><p className="whitespace-nowrap text-sm"><LocalDateTime value={game.played_at} dateOnly /></p><p className="technical-number mt-1 text-xs text-text-muted">{game.time_control ?? "—"}</p></td>
-      <td className="max-w-64 px-3 py-4"><p className="text-xs font-bold text-forest-light">{game.opening_code ?? "—"}</p><p className="mt-1 truncate text-sm">{game.opening_name ?? "Дебют не определён"}</p></td>
+      <td className="max-w-64 px-3 py-4"><p className="truncate text-sm">{game.opening_name ?? game.opening_code ?? "Дебют не определён"}</p>{game.opening_name && game.opening_code ? <p className="mt-1 text-xs font-bold text-forest-light">{game.opening_code}</p> : null}</td>
       <td className="px-3 py-4"><span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${resultClasses[game.result]}`}>{gameResultLabel(game.result)}</span></td>
       <td className="technical-number px-3 py-4 text-sm">{formatCpLoss(game.average_cp_loss)}</td>
       <td className="technical-number px-3 py-4 text-sm">{game.mistakes}</td>

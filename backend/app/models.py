@@ -47,6 +47,44 @@ class MoveClassification(str, Enum):
     BLUNDER = "blunder"
 
 
+class GamePhase(str, Enum):
+    OPENING = "opening"
+    MIDDLEGAME = "middlegame"
+    ENDGAME = "endgame"
+
+
+class CriticalMomentType(str, Enum):
+    TURNING_POINT = "turning_point"
+    BLUNDER = "blunder"
+    MISSED_OPPORTUNITY = "missed_opportunity"
+    MISSED_MATE = "missed_mate"
+    ALLOWED_MATE = "allowed_mate"
+    BEST_MOVE = "best_move"
+
+
+class ErrorType(str, Enum):
+    HANGING_PIECE = "hanging_piece"
+    MISSED_CAPTURE = "missed_capture"
+    MISSED_CHECK = "missed_check"
+    MISSED_MATE = "missed_mate"
+    ALLOWED_MATE = "allowed_mate"
+    KING_SAFETY = "king_safety"
+    DEVELOPMENT = "development"
+    BAD_EXCHANGE = "bad_exchange"
+    PAWN_STRUCTURE = "pawn_structure"
+    TACTICAL_PATTERN = "tactical_pattern"
+    FORK = "fork"
+    PIN = "pin"
+    SKEWER = "skewer"
+    BACK_RANK = "back_rank"
+
+
+class ErrorConfidence(str, Enum):
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+
 class SyncStatus(str, Enum):
     NEVER = "never"
     RUNNING = "running"
@@ -145,6 +183,9 @@ class MoveAnalysis(Base):
     centipawn_loss: Mapped[int] = mapped_column(Integer, nullable=False)
     classification: Mapped[MoveClassification] = mapped_column(
         enum_type(MoveClassification, "move_classification"), nullable=False
+    )
+    phase: Mapped[GamePhase | None] = mapped_column(
+        enum_type(GamePhase, "game_phase"), nullable=True
     )
     principal_variation: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(

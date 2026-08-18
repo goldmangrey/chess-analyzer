@@ -12,8 +12,6 @@ from app.repositories.games_repository import (
     list_games_with_personal_metrics,
 )
 from app.repositories.move_analysis_repository import (
-    get_classification_counts,
-    get_personal_aggregates,
     list_moves_for_game,
 )
 from app.schemas import (
@@ -21,11 +19,13 @@ from app.schemas import (
     AnalyzeGameRequest,
     ApiGameListItem,
     GameDetailResponse,
+    GameIntelligenceResponse,
     GameMovesResponse,
     GamesListResponse,
     MoveAnalysisRead,
 )
 from app.services.analysis_service import GameNotFoundError
+from app.services.game_intelligence_service import GameIntelligenceService
 from app.queues.errors import PermanentAnalysisTaskError
 
 
@@ -102,13 +102,8 @@ def get_game_detail(
     session: Session = Depends(get_database_session),
 ) -> GameDetailResponse:
     game = _require_game(session, game_id)
-    is_completed = game.analysis_status is AnalysisStatus.COMPLETED
-    aggregates = get_personal_aggregates(session, game_id) if is_completed else None
-    counts = (
-        get_classification_counts(session, game_id)
-        if is_completed
-        else {"inaccuracy": 0, "mistake": 0, "blunder": 0}
-    )
+    intelligence = GameIntelligenceService(session).build(game)
+    summary = intelligence.summary
     return GameDetailResponse(
         id=game.id,
         external_id=game.external_id,
@@ -125,14 +120,55 @@ def get_game_detail(
         time_control=game.time_control,
         pgn=game.pgn,
         analysis_status=game.analysis_status,
-        average_cp_loss=(
-            round(aggregates.average_cp_loss, 1)
-            if aggregates is not None and aggregates.average_cp_loss is not None
-            else None
+        average_cp_loss=summary.average_cp_loss if summary else None,
+        inaccuracies=summary.inaccuracies if summary else 0,
+        mistakes=summary.mistakes if summary else 0,
+        blunders=summary.blunders if summary else 0,
+        phases={
+            phase: {
+                "start_ply": row.start_ply,
+                "end_ply": row.end_ply,
+                "user_moves": row.user_moves,
+                "average_cp_loss": round(row.average_cp_loss, 1) if row.average_cp_loss is not None else None,
+                "inaccuracies": row.inaccuracies,
+                "mistakes": row.mistakes,
+                "blunders": row.blunders,
+            }
+            for phase, row in intelligence.phases.items()
+        },
+        critical_moments=tuple(
+            {
+                "ply": moment.ply,
+                "move_number": moment.move_number,
+                "move_san": moment.move_san,
+                "move_uci": moment.move_uci,
+                "phase": moment.phase,
+                "type": moment.type,
+                "severity": moment.severity,
+                "centipawn_loss": moment.centipawn_loss,
+                "evaluation_before": moment.evaluation_before,
+                "evaluation_after": moment.evaluation_after,
+                "evaluation_before_user_pov": moment.evaluation_before_user_pov,
+                "evaluation_after_user_pov": moment.evaluation_after_user_pov,
+                "importance_score": moment.importance_score,
+            }
+            for moment in intelligence.critical_moments
         ),
-        inaccuracies=counts["inaccuracy"],
-        mistakes=counts["mistake"],
-        blunders=counts["blunder"],
+        errors=tuple(
+            {
+                "ply": error.ply,
+                "move_number": error.move_number,
+                "move_san": error.move_san,
+                "phase": error.phase,
+                "severity": error.severity,
+                "primary_type": error.primary_type,
+                "secondary_types": error.secondary_types,
+                "confidence": error.confidence,
+                "centipawn_loss": error.centipawn_loss,
+                "critical_moment_type": error.critical_moment_type,
+            }
+            for error in intelligence.errors
+        ),
     )
 
 
@@ -148,6 +184,16 @@ def get_game_moves(
         analysis_status=game.analysis_status,
         items=tuple(MoveAnalysisRead.model_validate(move) for move in moves),
     )
+
+
+@router.get("/{game_id}/intelligence", response_model=GameIntelligenceResponse)
+def get_game_intelligence(
+    game_id: int,
+    session: Session = Depends(get_database_session),
+) -> GameIntelligenceResponse:
+    game = _require_game(session, game_id)
+    intelligence = GameIntelligenceService(session).build(game)
+    return GameIntelligenceResponse.model_validate(intelligence)
 
 
 @router.post(

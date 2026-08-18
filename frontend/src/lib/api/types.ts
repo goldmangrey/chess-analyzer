@@ -218,6 +218,92 @@ export type GameDetailResponse = {
   inaccuracies: number;
   mistakes: number;
   blunders: number;
+  phases: Partial<Record<GamePhase, GamePhaseStatistics>>;
+  critical_moments: CriticalMoment[];
+  errors: ErrorClassification[];
+};
+
+export type GamePhase = "opening" | "middlegame" | "endgame";
+
+export type GamePhaseStatistics = {
+  start_ply: number;
+  end_ply: number;
+  user_moves: number;
+  average_cp_loss: number | null;
+  inaccuracies: number;
+  mistakes: number;
+  blunders: number;
+};
+
+export type CriticalMomentType = "turning_point" | "blunder" | "missed_opportunity" | "missed_mate" | "allowed_mate" | "best_move";
+
+export type CriticalMoment = {
+  ply: number;
+  move_number: number;
+  move_san: string | null;
+  move_uci: string;
+  phase: GamePhase | null;
+  type: CriticalMomentType;
+  severity: MoveClassification;
+  centipawn_loss: number;
+  evaluation_before: number;
+  evaluation_after: number;
+  evaluation_before_user_pov: number;
+  evaluation_after_user_pov: number;
+  importance_score: number;
+};
+
+export type ErrorType = "hanging_piece" | "missed_capture" | "missed_check" | "missed_mate" | "allowed_mate" | "king_safety" | "development" | "bad_exchange" | "pawn_structure" | "tactical_pattern" | "fork" | "pin" | "skewer" | "back_rank";
+export type ErrorConfidence = "high" | "medium" | "low";
+
+export type ErrorClassification = {
+  ply: number;
+  move_number: number;
+  move_san: string | null;
+  phase: GamePhase | null;
+  severity: MoveClassification;
+  primary_type: ErrorType | null;
+  secondary_types: ErrorType[];
+  confidence: ErrorConfidence;
+  centipawn_loss: number;
+  critical_moment_type: CriticalMomentType | null;
+};
+
+export type GameIntelligenceResponse = {
+  intelligence_version: "1" | string;
+  analysis: {
+    status: AnalysisStatus;
+    intelligence_ready: boolean;
+  };
+  game: {
+    id: number;
+    external_id: string;
+    platform: string;
+    played_at: string | null;
+    result: GameResult;
+    user_color: UserColor;
+    opponent: string;
+    white_username: string;
+    black_username: string;
+    white_rating: number | null;
+    black_rating: number | null;
+    time_control: string | null;
+  };
+  opening: {
+    eco: string | null;
+    name: string | null;
+  };
+  summary: {
+    average_cp_loss: number | null;
+    user_moves: number;
+    inaccuracies: number;
+    mistakes: number;
+    blunders: number;
+  } | null;
+  phases: Partial<Record<GamePhase, GamePhaseStatistics>>;
+  critical_moments: CriticalMoment[];
+  errors: ErrorClassification[];
+  error_breakdown: Partial<Record<ErrorType, number>>;
 };
 
 export type MoveAnalysis = {
@@ -236,6 +322,7 @@ export type MoveAnalysis = {
   evaluation_after_cp: number | null;
   centipawn_loss: number;
   classification: MoveClassification;
+  phase: GamePhase | null;
   principal_variation: string | null;
   created_at: string;
 };

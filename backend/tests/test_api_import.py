@@ -62,6 +62,27 @@ def test_import_defaults_commit_fields_pending_and_analyze_false(api_app, api_cl
         session.close()
 
 
+def test_imported_game_api_contains_resolved_opening_name(api_app, api_client) -> None:
+    caro_kann = '''[Event "opening"]
+[White "Yeskendir"]
+[Black "Opponent"]
+[Result "1-0"]
+[ECO "B13"]
+
+1. e4 c6 2. d4 d5 3. exd5 cxd5 1-0
+'''
+    api_app.dependency_overrides[get_chesscom_client] = lambda: FakeClient([
+        record("opening", caro_kann),
+    ])
+
+    imported = api_client.post("/api/import/chess-com", json={"analyze": False})
+    games = api_client.get("/api/games").json()["items"]
+
+    assert imported.status_code == 200
+    assert games[0]["opening_code"] == "B13"
+    assert games[0]["opening_name"] == "Caro-Kann Defense: Exchange Variation"
+
+
 def test_import_explicit_duplicate_invalid_and_background_queue(
     api_app,
     api_client,

@@ -29,6 +29,7 @@ def test_upgrade_downgrade_upgrade_on_temporary_sqlite(tmp_path) -> None:
     command.upgrade(config, "head")
     engine = create_engine(url)
     assert set(inspect(engine).get_table_names()) == {"games", "move_analysis", "app_settings", "alembic_version"}
+    assert "phase" in {column["name"] for column in inspect(engine).get_columns("move_analysis")}
     command.downgrade(config, "base")
     assert set(inspect(engine).get_table_names()) == {"alembic_version"}
     command.upgrade(config, "head")

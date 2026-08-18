@@ -5,46 +5,50 @@ import { useState } from "react";
 import { ToastProvider } from "@/components/ui";
 import { AnalyzeGameButton } from "@/components/games/analyze-game-button";
 import { useBackgroundPolling } from "@/hooks/use-background-polling";
-import { fetchGameDetail, fetchGameMoves } from "@/lib/api";
-import type { GameDetailResponse, MoveAnalysis } from "@/lib/api/types";
+import { fetchGameIntelligence, fetchGameMoves } from "@/lib/api";
+import type { GameIntelligenceResponse, MoveAnalysis } from "@/lib/api/types";
 import { ANALYSIS_POLL_INTERVAL_MS, shouldPollAnalysis } from "@/lib/polling";
 
 import { AnalysisEmptyState } from "./analysis-empty-state";
 import { AnalysisRefreshButton } from "./analysis-refresh-button";
 import { AnalysisWorkspace } from "./analysis-workspace";
+import { CriticalMomentsCard } from "./critical-moments-card";
 import { GameHeaderCard } from "./game-header-card";
+import { PhaseStatisticsCard } from "./phase-statistics-card";
 
-export function AnalysisPage({ game, moves }: { game: GameDetailResponse; moves: MoveAnalysis[] }) {
-  const [liveGame, setLiveGame] = useState(game);
+export function AnalysisPage({ intelligence, moves }: { intelligence: GameIntelligenceResponse; moves: MoveAnalysis[] }) {
+  const [liveIntelligence, setLiveIntelligence] = useState(intelligence);
   const [liveMoves, setLiveMoves] = useState(moves);
 
-  const polling = shouldPollAnalysis(liveGame.analysis_status);
+  const polling = shouldPollAnalysis(liveIntelligence.analysis.status);
   const { isRefreshing } = useBackgroundPolling({
     enabled: polling,
     intervalMs: ANALYSIS_POLL_INTERVAL_MS,
     fetcher: async (signal) => {
-      const nextGame = await fetchGameDetail(liveGame.id, signal);
-      const nextMoves = nextGame.analysis_status === "completed"
-        ? (await fetchGameMoves(liveGame.id, signal)).items
+      const nextIntelligence = await fetchGameIntelligence(liveIntelligence.game.id, signal);
+      const nextMoves = nextIntelligence.analysis.status === "completed"
+        ? (await fetchGameMoves(liveIntelligence.game.id, signal)).items
         : liveMoves;
-      return { game: nextGame, moves: nextMoves };
+      return { intelligence: nextIntelligence, moves: nextMoves };
     },
     onSuccess: (next) => {
-      setLiveGame(next.game);
+      setLiveIntelligence(next.intelligence);
       setLiveMoves(next.moves);
     },
   });
 
-  const hasUsableAnalysis = liveGame.analysis_status === "completed" && liveMoves.length > 0;
+  const hasUsableAnalysis = liveIntelligence.analysis.intelligence_ready && liveMoves.length > 0;
   return (
     <ToastProvider>
-      <GameHeaderCard game={liveGame} />
+      <GameHeaderCard intelligence={liveIntelligence} />
       <div className="mt-3 flex min-h-9 flex-wrap items-center justify-end gap-2">
         {polling ? <span aria-live="polite" className="text-xs text-text-muted">{isRefreshing ? "Проверяем статус анализа…" : "Статус обновляется автоматически"}</span> : null}
         <AnalysisRefreshButton />
-        {hasUsableAnalysis ? <AnalyzeGameButton gameId={liveGame.id} status="completed" /> : null}
+        {hasUsableAnalysis ? <AnalyzeGameButton gameId={liveIntelligence.game.id} status="completed" /> : null}
       </div>
-      {hasUsableAnalysis ? <AnalysisWorkspace game={liveGame} moves={liveMoves} /> : <AnalysisEmptyState gameId={liveGame.id} status={liveGame.analysis_status} />}
+      {hasUsableAnalysis ? <PhaseStatisticsCard intelligence={liveIntelligence} /> : null}
+      {hasUsableAnalysis ? <CriticalMomentsCard intelligence={liveIntelligence} /> : null}
+      {hasUsableAnalysis ? <AnalysisWorkspace userColor={liveIntelligence.game.user_color} moves={liveMoves} /> : <AnalysisEmptyState gameId={liveIntelligence.game.id} status={liveIntelligence.analysis.status} />}
     </ToastProvider>
   );
 }

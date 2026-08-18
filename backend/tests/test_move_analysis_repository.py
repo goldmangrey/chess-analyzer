@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.models import Color, GameResult, MoveClassification
+from app.models import Color, GamePhase, GameResult, MoveClassification
 from app.repositories.games_repository import create_game, get_game_by_id
 from app.repositories.move_analysis_repository import (
     bulk_replace_move_analysis,
@@ -10,6 +10,7 @@ from app.repositories.move_analysis_repository import (
     delete_analysis_for_game,
     get_classification_counts,
     get_personal_aggregates,
+    get_phase_aggregates,
     list_moves_for_game,
     list_user_moves_for_game,
 )
@@ -37,6 +38,7 @@ def move_data(
     user: bool = True,
     loss: int = 0,
     classification: MoveClassification = MoveClassification.NORMAL,
+    phase: GamePhase | None = None,
 ) -> MoveAnalysisCreate:
     return MoveAnalysisCreate(
         game_id=game_id,
@@ -48,6 +50,7 @@ def move_data(
         played_move_uci="e2e4" if ply % 2 else "e7e5",
         centipawn_loss=loss,
         classification=classification,
+        phase=phase,
     )
 
 
@@ -114,6 +117,47 @@ def test_empty_personal_aggregate_contract(db_session: Session) -> None:
         "mistake": 0,
         "blunder": 0,
     }
+
+
+@pytest.mark.parametrize(
+    ("user_color", "user_plies"),
+    [(Color.WHITE, {1, 3, 5}), (Color.BLACK, {2, 4, 6})],
+)
+def test_phase_aggregates_use_only_user_moves(db_session, user_color, user_plies) -> None:
+    game = create_game(
+        db_session,
+        GameCreate(
+            external_id=f"phase-{user_color.value}",
+            white_username="User" if user_color is Color.WHITE else "Opponent",
+            black_username="User" if user_color is Color.BLACK else "Opponent",
+            user_color=user_color,
+            result=GameResult.WIN,
+            pgn="1. e4 e5 2. Nf3 Nc6 3. Bb5 a6",
+        ),
+    )
+    phases = {
+        1: GamePhase.OPENING, 2: GamePhase.OPENING,
+        3: GamePhase.MIDDLEGAME, 4: GamePhase.MIDDLEGAME,
+        5: GamePhase.MIDDLEGAME, 6: GamePhase.MIDDLEGAME,
+    }
+    for ply in range(1, 7):
+        is_user = ply in user_plies
+        create_move_analysis(db_session, move_data(
+            game.id,
+            ply,
+            user=is_user,
+            loss=10 * ply if is_user else 1000,
+            classification=MoveClassification.MISTAKE if is_user else MoveClassification.BLUNDER,
+            phase=phases[ply],
+        ))
+
+    aggregates = get_phase_aggregates(db_session, game.id)
+
+    assert [row.phase for row in aggregates] == [GamePhase.OPENING, GamePhase.MIDDLEGAME]
+    assert sum(row.user_moves for row in aggregates) == 3
+    assert all(row.blunders == 0 for row in aggregates)
+    assert all(row.average_cp_loss is not None and row.average_cp_loss < 1000 for row in aggregates)
+    assert GamePhase.ENDGAME not in {row.phase for row in aggregates}
 
 
 def test_bulk_replace_validates_ownership_before_delete(db_session: Session) -> None:

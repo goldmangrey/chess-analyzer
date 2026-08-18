@@ -11,6 +11,8 @@ import {
 
 const dashboardSource = readFileSync(new URL("../src/components/dashboard/dashboard-page.tsx", import.meta.url), "utf8");
 const analysisSource = readFileSync(new URL("../src/components/analysis/analysis-page.tsx", import.meta.url), "utf8");
+const analysisRouteSource = readFileSync(new URL("../src/app/games/[id]/page.tsx", import.meta.url), "utf8");
+const analysisLoadingSource = readFileSync(new URL("../src/app/games/[id]/loading.tsx", import.meta.url), "utf8");
 const pollingSource = readFileSync(new URL("../src/hooks/use-background-polling.ts", import.meta.url), "utf8");
 const frontendSourceFiles = [dashboardSource, analysisSource, pollingSource];
 
@@ -71,7 +73,15 @@ test("live refresh never uses a full-page reload", () => {
 });
 
 test("completed analysis fetches moves before rendering the report", () => {
-  assert.match(analysisSource, /nextGame\.analysis_status === "completed"/);
+  assert.match(analysisSource, /nextIntelligence\.analysis\.status === "completed"/);
+  assert.match(analysisSource, /fetchGameIntelligence/);
   assert.match(analysisSource, /fetchGameMoves/);
   assert.match(analysisSource, /setLiveMoves/);
+});
+
+test("analysis route loads unified intelligence with loading and error boundaries", () => {
+  assert.match(analysisRouteSource, /fetchGameIntelligence\(gameId\)/);
+  assert.doesNotMatch(analysisRouteSource, /fetchGameDetail\(gameId\)/);
+  assert.match(analysisLoadingSource, /export default function/);
+  assert.match(analysisRouteSource, /status: "unavailable"/);
 });

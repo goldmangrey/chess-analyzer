@@ -1,7 +1,7 @@
 import chess
 import pytest
 
-from app.models import Color, Game, MoveClassification
+from app.models import Color, Game, GamePhase, MoveClassification
 from app.services.game_analyzer import GameAnalysisError, analyze_game_moves
 from app.services.move_classifier import MAX_CP_LOSS
 from app.services.stockfish_service import MATE_SCORE, PositionAnalysis
@@ -55,6 +55,7 @@ def test_analyzes_every_mainline_ply_for_both_players() -> None:
         MoveClassification.MISTAKE,
         MoveClassification.BLUNDER,
     ]
+    assert {item.phase for item in analyses} == {GamePhase.OPENING}
     assert analyses[0].fen_before == chess.Board().fen()
     assert analyses[0].best_move_uci is not None
     assert analyses[0].principal_variation is not None
