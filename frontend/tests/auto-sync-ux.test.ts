@@ -13,6 +13,8 @@ const dashboardSource = readFileSync(new URL("../src/components/dashboard/dashbo
 const analysisSource = readFileSync(new URL("../src/components/analysis/analysis-page.tsx", import.meta.url), "utf8");
 const analysisRouteSource = readFileSync(new URL("../src/app/games/[id]/page.tsx", import.meta.url), "utf8");
 const analysisLoadingSource = readFileSync(new URL("../src/app/games/[id]/loading.tsx", import.meta.url), "utf8");
+const criticalMomentsSource = readFileSync(new URL("../src/components/analysis/critical-moments-card.tsx", import.meta.url), "utf8");
+const moveListSource = readFileSync(new URL("../src/components/analysis/move-list.tsx", import.meta.url), "utf8");
 const pollingSource = readFileSync(new URL("../src/hooks/use-background-polling.ts", import.meta.url), "utf8");
 const frontendSourceFiles = [dashboardSource, analysisSource, pollingSource];
 
@@ -84,4 +86,12 @@ test("analysis route loads unified intelligence with loading and error boundarie
   assert.doesNotMatch(analysisRouteSource, /fetchGameDetail\(gameId\)/);
   assert.match(analysisLoadingSource, /export default function/);
   assert.match(analysisRouteSource, /status: "unavailable"/);
+});
+
+test("critical moment and move list selections update the shared review ply", () => {
+  assert.match(criticalMomentsSource, /onSelectPly\(moment\.ply\)/);
+  assert.match(analysisSource, /setSelectedPly\(ply\)/);
+  assert.match(analysisSource, /scrollIntoView/);
+  assert.match(moveListSource, /onSelect\(0\)/);
+  assert.match(moveListSource, /selectedPly=\{selectedPly\}/);
 });

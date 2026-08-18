@@ -33,6 +33,19 @@
   --blunder: #e95d5d;
   --blunder-text: #a43d3d;
   --blunder-surface: #ffeaea;
+  --board-light: #f1ead8;
+  --board-dark: #4f6f52;
+  --board-last-move: rgba(243, 204, 88, 0.55);
+  --board-best-move: #54b881;
+  --board-mistake: rgba(238, 139, 67, 0.72);
+  --board-blunder: rgba(213, 69, 69, 0.76);
+  --board-brilliant: #3aa884;
+  --board-arrow-played: #d49a2f;
+  --board-arrow-best: #168354;
+  --board-coordinate-light: rgba(31, 69, 48, 0.75);
+  --board-coordinate-dark: rgba(255, 249, 232, 0.8);
+  --board-piece-white: #f6f0e3;
+  --board-piece-black: #26342d;
   --border-subtle: rgba(23, 23, 23, 0.08);
   --border-strong: rgba(23, 23, 23, 0.15);
   --shadow-soft:
@@ -134,6 +147,12 @@ textarea {
 
 .accent-shadow {
   box-shadow: var(--shadow-accent);
+}
+
+.review-board [data-piece] svg {
+  filter: drop-shadow(0 1px 1px rgba(20, 35, 25, 0.28));
+  transform: scale(0.94);
+  transform-origin: center;
 }
 
 .ambient-gradient {
