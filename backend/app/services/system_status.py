@@ -6,8 +6,8 @@ from sqlalchemy import Engine, inspect
 from sqlalchemy.engine import make_url
 
 from app.config import BACKEND_DIR, Settings
-from app.database import ALEMBIC_HEAD
 from app.database_url import database_backend, resolve_database_url
+from app.db.alembic_state import get_migration_head
 from app.schemas import (
     ChessComStatus,
     AnalysisQueueStatus,
@@ -43,7 +43,7 @@ def get_system_status(settings: Settings, engine: Engine) -> SystemStatusRespons
             if "alembic_version" in table_names:
                 migration_revision = connection.exec_driver_sql("SELECT version_num FROM alembic_version").scalar()
         tables_ready = REQUIRED_TABLES.issubset(table_names)
-        revision_ready = settings.auto_create_schema or migration_revision == ALEMBIC_HEAD
+        revision_ready = settings.auto_create_schema or migration_revision == get_migration_head()
         database_ready = tables_ready and revision_ready
     except Exception:
         database_ready = False
