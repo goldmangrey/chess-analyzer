@@ -1,7 +1,7 @@
 import pytest
 
 from app.models import Color, MoveClassification
-from app.services.move_classifier import calculate_centipawn_loss, classify_move
+from app.services.move_classifier import MAX_CP_LOSS, calculate_centipawn_loss, classify_move
 
 
 def test_centipawn_loss_uses_player_perspective_and_never_negative() -> None:
@@ -9,6 +9,13 @@ def test_centipawn_loss_uses_player_perspective_and_never_negative() -> None:
     assert calculate_centipawn_loss(Color.BLACK, -100, -40) == 60
     assert calculate_centipawn_loss(Color.WHITE, 0, 50) == 0
     assert calculate_centipawn_loss(Color.BLACK, 50, 0) == 0
+
+
+def test_centipawn_loss_expected_swing_and_upper_bound() -> None:
+    assert calculate_centipawn_loss(Color.WHITE, 120, -80) == 200
+    assert calculate_centipawn_loss(Color.WHITE, 20, 25) == 0
+    assert calculate_centipawn_loss(Color.WHITE, 100_000, 0) == MAX_CP_LOSS
+    assert calculate_centipawn_loss(Color.BLACK, 0, 100_000) == MAX_CP_LOSS
 
 
 @pytest.mark.parametrize(
