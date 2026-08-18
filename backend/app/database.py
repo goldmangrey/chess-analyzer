@@ -7,12 +7,12 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import Settings, get_settings
 from app.database_url import database_backend, resolve_database_url
+from app.db.alembic_state import get_migration_head
 from app.db.base import Base
 
 
 logger = logging.getLogger(__name__)
 REQUIRED_TABLES = {"games", "move_analysis", "app_settings"}
-ALEMBIC_HEAD = "0001_initial_schema"
 
 
 def create_database_engine(database_url: str, *, settings: Settings | None = None) -> Engine:
@@ -120,7 +120,10 @@ def init_db(
         raise RuntimeError("Database schema is not ready. Run alembic upgrade head")
     if "alembic_version" not in table_names:
         raise RuntimeError("Database is not stamped. Run alembic stamp head after schema verification")
+    expected_revision = get_migration_head()
     with bind.connect() as connection:
-        revision = connection.exec_driver_sql("SELECT version_num FROM alembic_version").scalar()
-    if revision != ALEMBIC_HEAD:
+        revisions = frozenset(
+            connection.exec_driver_sql("SELECT version_num FROM alembic_version").scalars()
+        )
+    if revisions != {expected_revision}:
         raise RuntimeError("Database migration is not at head. Run alembic upgrade head")

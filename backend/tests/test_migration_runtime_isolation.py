@@ -68,6 +68,25 @@ def test_database_module_import_does_not_validate_application_settings() -> None
     assert result.stdout.strip() == "imported"
 
 
+def test_migration_graph_discovery_has_no_runtime_settings_or_engine_side_effects() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "import sys; from app.db.alembic_state import get_migration_head; "
+            "assert 'app.config' not in sys.modules; "
+            "assert 'app.database' not in sys.modules; "
+            "print(get_migration_head())",
+        ],
+        cwd=BACKEND_DIR,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "0002_add_move_analysis_phase"
+
+
 def test_cloud_sql_migration_url_uses_socket_and_encodes_password() -> None:
     password = "p@ss:/?#[]"
     rendered = build_migration_database_url(
