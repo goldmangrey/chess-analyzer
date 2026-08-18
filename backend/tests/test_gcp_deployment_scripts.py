@@ -17,6 +17,16 @@ def _deployment_env(tmp_path: Path) -> tuple[dict[str, str], Path]:
     fake_gcloud.write_text(
         """#!/usr/bin/env bash
 printf '%s\\n' "$*" >> "$FAKE_GCLOUD_CALLS"
+if [[ "$*" == *"scheduler jobs describe"* ]] && [[ "${FAKE_SCHEDULER_EXISTS:-0}" != "1" ]]; then
+  exit 1
+fi
+if [[ "$*" == *"scheduler jobs create http"* ]] || [[ "$*" == *"scheduler jobs update http"* ]]; then
+  for argument in "$@"; do
+    if [[ "$argument" == --flags-file=* ]]; then
+      python3 -c 'import json, sys; print("FLAGS_KEY=" + next(iter(json.load(open(sys.argv[1])))))' "${argument#--flags-file=}" >> "$FAKE_GCLOUD_CALLS"
+    fi
+  done
+fi
 if [[ "$*" == *"sql instances describe"* ]] || [[ "$*" == *"sql databases describe"* ]]; then
   exit 1
 fi
@@ -37,6 +47,7 @@ exit 0
             "CHESSCOM_USER_AGENT": "ChessAITeacher test",
             "ANALYSIS_WORKER_SHARED_SECRET": "worker-test-secret",
             "SCHEDULED_SYNC_SHARED_SECRET": "sync-test-secret",
+            "SYNC_SERVICE_URL": "https://sync.test.invalid",
         }
     )
     return env, calls
@@ -126,6 +137,38 @@ def test_scheduler_contract_runs_every_minute() -> None:
     assert "--schedule \"$SCHEDULER_SCHEDULE\"" in (
         GCP_SCRIPTS / "create-scheduler-job.sh"
     ).read_text(encoding="utf-8")
+
+
+def test_scheduler_create_uses_headers_flags_file_without_exposing_secret(
+    tmp_path: Path,
+) -> None:
+    env, calls = _deployment_env(tmp_path)
+    env["FAKE_SCHEDULER_EXISTS"] = "0"
+
+    result = _run("create-scheduler-job.sh", "--apply", env=env)
+
+    assert result.returncode == 0, result.stderr
+    log = calls.read_text(encoding="utf-8")
+    assert "scheduler jobs create http" in log
+    assert "FLAGS_KEY=--headers" in log
+    assert "FLAGS_KEY=--update-headers" not in log
+    assert "sync-test-secret" not in result.stdout + result.stderr + log
+
+
+def test_scheduler_update_uses_update_headers_flags_file_without_exposing_secret(
+    tmp_path: Path,
+) -> None:
+    env, calls = _deployment_env(tmp_path)
+    env["FAKE_SCHEDULER_EXISTS"] = "1"
+
+    result = _run("create-scheduler-job.sh", "--apply", env=env)
+
+    assert result.returncode == 0, result.stderr
+    log = calls.read_text(encoding="utf-8")
+    assert "scheduler jobs update http" in log
+    assert "FLAGS_KEY=--update-headers" in log
+    assert "FLAGS_KEY=--headers" not in log
+    assert "sync-test-secret" not in result.stdout + result.stderr + log
 
 
 def test_cloud_sql_rejects_invalid_edition_and_shared_core_enterprise_plus(
