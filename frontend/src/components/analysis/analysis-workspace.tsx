@@ -4,9 +4,10 @@ import { useEffect, useMemo } from "react";
 
 import type { GameIntelligenceResponse, MoveAnalysis } from "@/lib/api/types";
 import { fenForSelectedPly } from "@/lib/chess-position";
-import { keyboardNavigationTarget, shouldIgnoreBoardShortcut } from "@/lib/review-board";
+import { criticalMomentScrollBehavior, keyboardNavigationTarget, shouldIgnoreBoardShortcut } from "@/lib/review-board";
 
 import { ChessBoardPanel } from "./chess-board-panel";
+import { CriticalMomentsCard } from "./critical-moments-card";
 import { EvaluationTimeline } from "./evaluation-timeline";
 import { MoveReviewPanel } from "./move-review-panel";
 import { MoveList } from "./move-list";
@@ -20,6 +21,13 @@ export function AnalysisWorkspace({ intelligence, moves, selectedPly, onSelect }
   const selectedMoment = useMemo(() => intelligence.critical_moments.find((moment) => moment.ply === selectedPly) ?? null, [intelligence.critical_moments, selectedPly]);
 
   function selectPly(ply: number) { onSelect(Math.max(0, Math.min(total, ply))); }
+  function selectCriticalPly(ply: number) {
+    selectPly(ply);
+    requestAnimationFrame(() => {
+      const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+      document.getElementById("review-board")?.scrollIntoView({ behavior: criticalMomentScrollBehavior(reducedMotion), block: "start" });
+    });
+  }
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -35,12 +43,14 @@ export function AnalysisWorkspace({ intelligence, moves, selectedPly, onSelect }
   }, [onSelect, selectedPly, total]);
 
   return (
-    <div className="mt-6 space-y-6">
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,7fr)_minmax(340px,5fr)] xl:items-start">
-        <ChessBoardPanel fen={fen} orientation={intelligence.game.user_color} move={selectedMove} error={selectedError} moment={selectedMoment} evaluation={evaluation} selectedPly={selectedPly} total={total} onSelect={selectPly} />
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-1"><MoveList moves={moves} criticalMoments={intelligence.critical_moments} selectedPly={selectedPly} onSelect={selectPly} /><MoveReviewPanel key={selectedPly} move={selectedMove} error={selectedError} moment={selectedMoment} userColor={intelligence.game.user_color} /></div>
+    <div className="mt-5 space-y-5 sm:mt-6 sm:space-y-6">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,7fr)_minmax(350px,5fr)] xl:items-start xl:gap-6">
+        <ChessBoardPanel fen={fen} orientation={intelligence.game.user_color} move={selectedMove} evaluation={evaluation} selectedPly={selectedPly} total={total} onSelect={selectPly} />
+        <MoveReviewPanel key={selectedPly} move={selectedMove} error={selectedError} moment={selectedMoment} userColor={intelligence.game.user_color} />
       </div>
+      <CriticalMomentsCard intelligence={intelligence} selectedPly={selectedPly} onSelectPly={selectCriticalPly} />
       <EvaluationTimeline moves={moves} criticalMoments={intelligence.critical_moments} userColor={intelligence.game.user_color} selectedPly={selectedPly} onSelect={selectPly} />
+      <MoveList moves={moves} criticalMoments={intelligence.critical_moments} selectedPly={selectedPly} onSelect={selectPly} />
     </div>
   );
 }

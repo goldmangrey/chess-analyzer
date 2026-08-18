@@ -92,9 +92,9 @@ test("component derives active state from selectedPly and invokes the board call
   assert.doesNotMatch(source, /importance_score/);
 });
 
-test("analysis callback synchronizes selection and reduced-motion board scroll", async () => {
-  const source = await readFile(new URL("../src/components/analysis/analysis-page.tsx", import.meta.url), "utf8");
-  assert.match(source, /setSelectedPly\(ply\)/);
+test("workspace callback synchronizes selection and reduced-motion board scroll", async () => {
+  const source = await readFile(new URL("../src/components/analysis/analysis-workspace.tsx", import.meta.url), "utf8");
+  assert.match(source, /selectPly\(ply\)/);
   assert.match(source, /prefers-reduced-motion/);
   assert.match(source, /scrollIntoView/);
   assert.match(source, /selectedPly=\{selectedPly\}/);

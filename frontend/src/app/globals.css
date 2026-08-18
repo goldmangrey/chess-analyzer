@@ -150,8 +150,8 @@ textarea {
 }
 
 .review-board [data-piece] svg {
-  filter: drop-shadow(0 1px 1px rgba(20, 35, 25, 0.28));
-  transform: scale(0.94);
+  filter: drop-shadow(0 1px 1px rgba(20, 35, 25, 0.22));
+  transform: scale(0.93);
   transform-origin: center;
 }
 

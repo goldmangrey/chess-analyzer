@@ -11,6 +11,7 @@ import {
 
 const dashboardSource = readFileSync(new URL("../src/components/dashboard/dashboard-page.tsx", import.meta.url), "utf8");
 const analysisSource = readFileSync(new URL("../src/components/analysis/analysis-page.tsx", import.meta.url), "utf8");
+const analysisWorkspaceSource = readFileSync(new URL("../src/components/analysis/analysis-workspace.tsx", import.meta.url), "utf8");
 const analysisRouteSource = readFileSync(new URL("../src/app/games/[id]/page.tsx", import.meta.url), "utf8");
 const analysisLoadingSource = readFileSync(new URL("../src/app/games/[id]/loading.tsx", import.meta.url), "utf8");
 const criticalMomentsSource = readFileSync(new URL("../src/components/analysis/critical-moments-card.tsx", import.meta.url), "utf8");
@@ -91,7 +92,7 @@ test("analysis route loads unified intelligence with loading and error boundarie
 test("critical moment and move list selections update the shared review ply", () => {
   assert.match(criticalMomentsSource, /onSelectPly\(moment\.ply\)/);
   assert.match(analysisSource, /setSelectedPly\(ply\)/);
-  assert.match(analysisSource, /scrollIntoView/);
+  assert.match(analysisWorkspaceSource, /scrollIntoView/);
   assert.match(moveListSource, /onSelect\(0\)/);
   assert.match(moveListSource, /selectedPly=\{selectedPly\}/);
 });
