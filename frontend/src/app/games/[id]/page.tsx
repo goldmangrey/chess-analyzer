@@ -30,5 +30,5 @@ export default async function GameAnalysisRoute({ params }: { params: Promise<{ 
   const result = await loadAnalysis(gameId);
   if (result.status === "not-found") notFound();
   if (result.status === "unavailable") return <AppShell activeSection="games" engineStatus="unavailable"><AnalysisError /></AppShell>;
-  return <AppShell activeSection="games" engineStatus={result.systemStatus.status}><AnalysisPage game={result.game} moves={result.moves} /></AppShell>;
+  return <AppShell activeSection="games" engineStatus={result.systemStatus.status}><AnalysisPage key={`${result.game.id}:${result.game.analysis_status}`} game={result.game} moves={result.moves} /></AppShell>;
 }

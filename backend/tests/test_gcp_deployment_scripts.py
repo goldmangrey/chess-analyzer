@@ -115,6 +115,19 @@ def test_exported_environment_wins_over_deploy_env() -> None:
     assert result.stdout == "explicit-test-project"
 
 
+def test_scheduler_contract_runs_every_minute() -> None:
+    deploy_env = (ROOT / "deploy" / "gcp.env").read_text(encoding="utf-8")
+    example_env = (ROOT / "deploy" / "gcp.env.example").read_text(encoding="utf-8")
+    common = (GCP_SCRIPTS / "common.sh").read_text(encoding="utf-8")
+
+    assert 'SCHEDULER_SCHEDULE="* * * * *"' in deploy_env
+    assert 'SCHEDULER_SCHEDULE="* * * * *"' in example_env
+    assert 'SCHEDULER_SCHEDULE:=* * * * *' in common
+    assert "--schedule \"$SCHEDULER_SCHEDULE\"" in (
+        GCP_SCRIPTS / "create-scheduler-job.sh"
+    ).read_text(encoding="utf-8")
+
+
 def test_cloud_sql_rejects_invalid_edition_and_shared_core_enterprise_plus(
     tmp_path: Path,
 ) -> None:

@@ -1,6 +1,9 @@
+from decimal import Decimal
+
 from sqlalchemy.orm import Session
 
 from app.models import AnalysisStatus, Color, Game, MoveAnalysis, MoveClassification
+from app.repositories.statistics_repository import OpeningMetricsRow
 
 
 def seed_stats(api_app) -> None:
@@ -66,3 +69,29 @@ def test_stats_endpoints_real_metrics_and_opponent_isolation(api_app, api_client
     )
     assert dashboard.status_code == 200
     assert dashboard.json()["recent_games"][0]["blunders"] == 0
+
+
+def test_dashboard_serializes_decimal_opening_aggregates_as_json_numbers(
+    api_client,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        "app.services.statistics_service.get_opening_metrics",
+        lambda *_args, **_kwargs: (
+            OpeningMetricsRow(
+                "B20", "Sicilian", Decimal("3"), Decimal("0"), Decimal("0"),
+                Decimal("3"), Decimal("6"), Decimal("450.0"), Decimal("1"), Decimal("2"),
+            ),
+        ),
+    )
+
+    response = api_client.get(
+        "/api/stats/dashboard?minimum_opening_games=1&weakest_openings_limit=1"
+    )
+
+    assert response.status_code == 200
+    opening = response.json()["weakest_openings"][0]
+    assert opening["average_cp_loss"] == 75.0
+    assert opening["weakness_score"] == 127.5
+    assert isinstance(opening["average_cp_loss"], float)
+    assert isinstance(opening["weakness_score"], float)

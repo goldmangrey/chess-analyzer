@@ -13,7 +13,7 @@ export function AnalyzeGameButton({ gameId, status }: { gameId: number; status: 
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const analyzing = status === "analyzing";
+  const analyzing = ["queued", "processing", "analyzing"].includes(status);
   const repeat = status === "completed";
 
   async function analyze() {

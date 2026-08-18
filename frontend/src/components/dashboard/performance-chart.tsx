@@ -13,7 +13,8 @@ import {
 
 import { BentoCard } from "@/components/ui";
 import type { TrendPoint } from "@/lib/api/types";
-import { formatCpLoss, formatDate } from "@/lib/format";
+import { formatBrowserDate } from "@/lib/date-time";
+import { formatCpLoss } from "@/lib/format";
 
 const subscribe = () => () => undefined;
 
@@ -28,7 +29,7 @@ export function PerformanceChart({ trends }: { trends: TrendPoint[] }) {
     );
   }
 
-  const data = trends.map((point, index) => ({ ...point, order: index + 1, dateLabel: formatDate(point.played_at) }));
+  const data = trends.map((point, index) => ({ ...point, order: index + 1, dateLabel: formatBrowserDate(point.played_at) }));
 
   return (
     <BentoCard as="section" className="h-full p-6 sm:p-8">

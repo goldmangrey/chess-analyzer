@@ -2,9 +2,9 @@ import { AnalyzeGameButton } from "./analyze-game-button";
 
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
-import { StatusPill } from "@/components/ui";
+import { LocalDateTime, StatusPill } from "@/components/ui";
 import type { ApiGameListItem } from "@/lib/api/types";
-import { formatCpLoss, formatDate } from "@/lib/format";
+import { formatCpLoss } from "@/lib/format";
 import { analysisStatusLabel, analysisStatusTone, gameResultLabel } from "@/lib/status";
 
 const resultClasses = {
@@ -30,7 +30,7 @@ export function GameRow({ game }: { game: ApiGameListItem }) {
           <div className="min-w-0"><Link href={`/games/${game.id}`} className="focus-ring group/link inline-flex max-w-full items-center gap-1 rounded-lg text-sm font-semibold hover:text-forest"><span className="truncate">{game.opponent_username}</span><ArrowUpRight aria-hidden="true" size={14} className="shrink-0 transition group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5" /></Link>{ratingText ? <p className="technical-number mt-1 text-xs text-text-muted">мой / соп. {ratingText}</p> : null}</div>
         </div>
       </td>
-      <td className="px-3 py-4"><p className="whitespace-nowrap text-sm">{formatDate(game.played_at)}</p><p className="technical-number mt-1 text-xs text-text-muted">{game.time_control ?? "—"}</p></td>
+      <td className="px-3 py-4"><p className="whitespace-nowrap text-sm"><LocalDateTime value={game.played_at} dateOnly /></p><p className="technical-number mt-1 text-xs text-text-muted">{game.time_control ?? "—"}</p></td>
       <td className="max-w-64 px-3 py-4"><p className="text-xs font-bold text-forest-light">{game.opening_code ?? "—"}</p><p className="mt-1 truncate text-sm">{game.opening_name ?? "Дебют не определён"}</p></td>
       <td className="px-3 py-4"><span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${resultClasses[game.result]}`}>{gameResultLabel(game.result)}</span></td>
       <td className="technical-number px-3 py-4 text-sm">{formatCpLoss(game.average_cp_loss)}</td>

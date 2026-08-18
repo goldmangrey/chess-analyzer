@@ -87,6 +87,7 @@ esac
             "TASKS_INVOKER_SERVICE_ACCOUNT": "chess-tasks-invoker",
             "SCHEDULER_SERVICE_ACCOUNT": "chess-scheduler",
             "SCHEDULER_JOB": "chess-sync",
+            "SCHEDULER_SCHEDULE": "* * * * *",
             "ALLOW_DIRTY_DEPLOY": "true",
             "FORCE_REBUILD": "true",
             "SCHEDULED_SYNC_SHARED_SECRET": "scheduler-test-secret",
@@ -152,6 +153,7 @@ def test_apply_contract_and_data_flow(tmp_path: Path) -> None:
     )
     assert "--uri https://chess-ai-sync-test.run.app/internal/sync/chess-com" in scheduler_line
     assert "--oidc-token-audience https://chess-ai-sync-test.run.app" in scheduler_line
+    assert r"--schedule \*\ \*\ \*\ \*\ \*" in scheduler_line
     assert "scheduler-test-secret" not in log
     mutation_log = "\n".join(line for line in log.splitlines() if "--help" not in line)
     assert "secrets versions add" not in mutation_log

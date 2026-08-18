@@ -4,11 +4,10 @@ import { RefreshCw, Unplug, UserRoundCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-import { BentoCard, Button, Input, Select, ToastProvider, useToast } from "@/components/ui";
+import { BentoCard, Button, Input, LocalDateTime, Select, ToastProvider, useToast } from "@/components/ui";
 import { useChessComSync } from "@/hooks/use-chesscom-sync";
 import { syncChessCom, updateAppSettings } from "@/lib/api";
 import type { AppSettings } from "@/lib/api/types";
-import { formatDateTime } from "@/lib/format";
 import { SERVER_SYNC_ENABLED } from "@/lib/env";
 
 const monthOptions = [3, 6, 12].map((value) => ({ value: String(value), label: `${value} месяцев` }));
@@ -85,7 +84,7 @@ function ChessComCard({ settings }: { settings: AppSettings }) {
   return (
     <BentoCard as="section" id="import" tone="mint" className="h-full scroll-mt-8 p-6 sm:p-8">
       <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[0.18em] text-forest-light">Chess.com подключён</p><h2 className="mt-3 text-2xl font-semibold tracking-[-0.04em]">{settings.chesscom_username}</h2></div><UserRoundCheck aria-hidden="true" className="text-forest" /></div>
-      <p className="mt-5 text-sm text-text-secondary">Последняя синхронизация:<br /><strong className="text-text-primary">{formatDateTime(settings.last_sync_completed_at)}</strong></p>
+      <p className="mt-5 text-sm text-text-secondary">Последняя синхронизация:<br /><strong className="text-text-primary"><LocalDateTime value={settings.last_sync_completed_at} /></strong></p>
       <Button className="mt-6 w-full" loading={loading} leftIcon={<RefreshCw size={17} />} onClick={refreshGames}>Обновить партии</Button>
       <div className="mt-6 space-y-3 border-t border-[var(--border-subtle)] pt-5">
         <label className="flex items-center justify-between gap-3 text-sm"><span>Автоматическая синхронизация</span><input type="checkbox" checked={autoSync} onChange={(event) => savePreference("auto_sync_enabled", event.target.checked)} className="size-5 accent-[var(--forest)]" /></label>
@@ -95,7 +94,7 @@ function ChessComCard({ settings }: { settings: AppSettings }) {
         <summary className="cursor-pointer font-semibold text-forest">Изменить настройки</summary>
         <div className="mt-4 space-y-3"><Input label="Chess.com username" value={username} onChange={(event) => setUsername(event.target.value)} disabled={loading} /><p className="text-xs leading-5 text-text-muted">При смене username существующая локальная история не удаляется.</p><Button type="button" variant="secondary" size="sm" loading={loading} onClick={saveUsername}>Сохранить username</Button></div>
       </details>
-      {!autoSync ? <p className="mt-4 flex items-center gap-2 text-xs text-text-muted"><Unplug size={14} /> Автообновление выключено</p> : <p className="mt-4 text-xs text-text-muted">{SERVER_SYNC_ENABLED ? "Новые партии проверяются автоматически каждые несколько минут." : "Автосинхронизация работает, пока открыт сайт."}</p>}
+      {!autoSync ? <p className="mt-4 flex items-center gap-2 text-xs text-text-muted"><Unplug size={14} /> Автообновление выключено</p> : <p className="mt-4 text-xs text-text-muted">{SERVER_SYNC_ENABLED ? "Автосинхронизация включена · новые партии проверяются каждую минуту." : "Автосинхронизация работает, пока открыт сайт."}</p>}
     </BentoCard>
   );
 }

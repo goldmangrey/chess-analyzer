@@ -1,3 +1,11 @@
+cd ~/chess-ai-teacher/frontend
+
+rm -rf .next
+rm -rf node_modules
+
+npm ci
+npm run dev
+
 # Chess AI Teacher
 
 Локальное однопользовательское приложение для синхронизации партий Chess.com, анализа

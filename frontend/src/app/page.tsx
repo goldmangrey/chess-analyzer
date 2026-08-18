@@ -2,24 +2,37 @@ import type { Metadata } from "next";
 
 import { DashboardError, DashboardPage } from "@/components/dashboard";
 import { AppShell } from "@/components/layout";
-import { fetchAppSettings, fetchDashboard, fetchSystemStatus } from "@/lib/api";
+import { ApiNetworkError, fetchAppSettings, fetchDashboard, fetchSystemStatus } from "@/lib/api";
 
 export const metadata: Metadata = { title: "Chess AI Teacher — Dashboard" };
 export const dynamic = "force-dynamic";
 
 async function loadDashboard() {
-  try {
-    const [data, systemStatus, settings] = await Promise.all([fetchDashboard(), fetchSystemStatus(), fetchAppSettings()]);
-    return { data, systemStatus, settings, available: true } as const;
-  } catch {
-    return { data: null, systemStatus: null, settings: null, available: false } as const;
-  }
+  const [dashboard, systemStatus, settings] = await Promise.allSettled([
+    fetchDashboard(),
+    fetchSystemStatus(),
+    fetchAppSettings(),
+  ]);
+  return { dashboard, systemStatus, settings };
 }
 
 export default async function Home() {
   const result = await loadDashboard();
-  if (!result.available) {
-    return <AppShell activeSection="dashboard" engineStatus="unavailable"><DashboardError /></AppShell>;
+  const engineStatus = result.systemStatus.status === "fulfilled"
+    ? result.systemStatus.value.status
+    : "unavailable";
+  if (result.dashboard.status === "rejected") {
+    return <AppShell activeSection="dashboard" engineStatus={engineStatus}>
+      <DashboardError
+        kind={result.dashboard.reason instanceof ApiNetworkError ? "network" : "dashboard"}
+        settings={result.settings.status === "fulfilled" ? result.settings.value : null}
+      />
+    </AppShell>;
   }
-  return <AppShell activeSection="dashboard" engineStatus={result.systemStatus.status}><DashboardPage data={result.data} systemStatus={result.systemStatus} settings={result.settings} /></AppShell>;
+  if (result.systemStatus.status === "rejected" || result.settings.status === "rejected") {
+    return <AppShell activeSection="dashboard" engineStatus={engineStatus}>
+      <DashboardError kind="network" settings={null} />
+    </AppShell>;
+  }
+  return <AppShell activeSection="dashboard" engineStatus={engineStatus}><DashboardPage key={result.settings.value.last_sync_completed_at ?? "never"} data={result.dashboard.value} systemStatus={result.systemStatus.value} settings={result.settings.value} /></AppShell>;
 }

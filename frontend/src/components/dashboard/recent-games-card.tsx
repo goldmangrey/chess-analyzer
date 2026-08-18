@@ -1,9 +1,9 @@
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
-import { BentoCard, StatusPill, ToastProvider } from "@/components/ui";
+import { BentoCard, LocalDateTime, StatusPill, ToastProvider } from "@/components/ui";
 import type { RecentGameStats } from "@/lib/api/types";
-import { formatCpLoss, formatDate } from "@/lib/format";
+import { formatCpLoss } from "@/lib/format";
 import { analysisStatusLabel, analysisStatusTone, gameResultLabel } from "@/lib/status";
 import { AnalyzeGameButton } from "@/components/games/analyze-game-button";
 
@@ -24,7 +24,7 @@ export function RecentGamesCard({ games }: { games: RecentGameStats[] }) {
             <div key={game.game_id} className="group grid gap-3 rounded-xl py-4 transition hover:bg-surface-muted sm:grid-cols-[minmax(0,1.4fr)_auto_auto] sm:items-center sm:px-2">
               <div className="min-w-0">
                 <div className="flex items-center gap-2"><span aria-hidden="true" className={game.user_color === "white" ? "size-3 rounded-sm border border-[var(--border-strong)] bg-white" : "size-3 rounded-sm bg-surface-dark"} /><Link href={`/games/${game.game_id}`} className="focus-ring truncate rounded-lg text-sm font-semibold hover:text-forest">vs {game.opponent_username}</Link></div>
-                <p className="mt-1 truncate text-xs text-text-muted">{game.opening_code ? `${game.opening_code} · ` : ""}{game.opening_name ?? "Дебют не определён"} · {formatDate(game.played_at)}</p>
+                <p className="mt-1 truncate text-xs text-text-muted">{game.opening_code ? `${game.opening_code} · ` : ""}{game.opening_name ?? "Дебют не определён"} · <LocalDateTime value={game.played_at} dateOnly /></p>
               </div>
               <div className="flex flex-wrap items-center gap-3 text-xs">
                 <strong className={resultClasses[game.result]}>{gameResultLabel(game.result)}</strong>

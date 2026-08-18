@@ -146,7 +146,7 @@ export SYNC_SERVICE_URL="$(gcloud run services describe "$SYNC_SERVICE" \
 ./scripts/gcp/create-scheduler-job.sh --apply
 ```
 
-The default schedule is `*/3 * * * *` in UTC; `*/5 * * * *` is a cheaper
+The default schedule is `* * * * *` in UTC; a less frequent cron is a cheaper
 pet-project option. Scheduler sends an OIDC token with audience equal to the
 service origin and POSTs `{ "schema_version": 1 }`. IAM is primary
 authentication. The shared-secret header is defence-in-depth; Scheduler stores

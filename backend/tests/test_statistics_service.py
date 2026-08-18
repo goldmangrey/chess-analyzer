@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 
 import pytest
 from pydantic import ValidationError
@@ -7,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.models import AnalysisStatus, Color, Game, GameResult, MoveAnalysis, MoveClassification
 from app.schemas import StatsSummary
+from app.repositories.statistics_repository import OpeningMetricsRow
 from app.services.statistics_service import (
     compare_recent_periods,
     get_dashboard_statistics,
@@ -155,6 +157,46 @@ def test_weakest_openings_formula_threshold_sort_limit_and_unknown(db_session: S
     for kwargs in ({"minimum_games": 0}, {"limit": 0}, {"limit": 51}):
         with pytest.raises(ValueError):
             get_weakest_openings(db_session, **kwargs)
+
+
+def test_weakest_openings_normalizes_decimal_and_none_aggregates(
+    db_session: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    rows = (
+        OpeningMetricsRow(
+            "B20", "Sicilian", Decimal("4"), Decimal("0"), None,
+            Decimal("4"), Decimal("8"), Decimal("640.0"), Decimal("2"), Decimal("1"),
+        ),
+        OpeningMetricsRow(
+            "A00", "No moves", Decimal("3"), None, None,
+            None, None, None, None, None,
+        ),
+    )
+    monkeypatch.setattr(
+        "app.services.statistics_service.get_opening_metrics",
+        lambda *_args, **_kwargs: rows,
+    )
+
+    openings = get_weakest_openings(db_session, minimum_games=1, limit=5)
+
+    assert len(openings) == 1  # A zero/None denominator has no meaningful analytic metric.
+    opening = openings[0]
+    assert opening.average_cp_loss == 80.0
+    assert opening.loss_rate == 1.0
+    assert opening.mistakes_per_game == 0.5
+    assert opening.blunders_per_game == 0.25
+    assert opening.weakness_score == 119.25
+    assert all(
+        isinstance(value, float)
+        for value in (
+            opening.average_cp_loss,
+            opening.loss_rate,
+            opening.mistakes_per_game,
+            opening.blunders_per_game,
+            opening.weakness_score,
+        )
+    )
 
 
 def test_trends_latest_chronological_opponents_and_isolation(db_session: Session) -> None:

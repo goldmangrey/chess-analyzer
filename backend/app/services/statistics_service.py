@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from decimal import Decimal
 
 from sqlalchemy.orm import Session
 
@@ -20,8 +21,17 @@ from app.schemas import (
 )
 
 
-def _average(total: int, count: int, digits: int = 1) -> float | None:
-    return round(total / count, digits) if count else None
+Numeric = Decimal | float | int
+
+
+def _as_float(value: Numeric | None, default: float = 0.0) -> float:
+    """Normalize database aggregate values at the business-layer boundary."""
+    return float(value) if value is not None else default
+
+
+def _average(total: Numeric | None, count: Numeric | None, digits: int = 1) -> float | None:
+    normalized_count = _as_float(count)
+    return round(_as_float(total) / normalized_count, digits) if normalized_count else None
 
 
 def get_summary(session: Session) -> StatsSummary:
@@ -57,11 +67,11 @@ def _period_metrics(rows: tuple[GameMetricsRow, ...]) -> _PeriodMetrics:
     return _PeriodMetrics(
         count=count,
         average_cp_loss=_average(
-            sum(row.total_cp_loss for row in rows),
-            sum(row.user_move_count for row in rows),
+            sum((_as_float(row.total_cp_loss) for row in rows), 0.0),
+            sum((_as_float(row.user_move_count) for row in rows), 0.0),
         ),
-        mistakes_per_game=_average(sum(row.mistakes for row in rows), count, 2),
-        blunders_per_game=_average(sum(row.blunders for row in rows), count, 2),
+        mistakes_per_game=_average(sum((_as_float(row.mistakes) for row in rows), 0.0), count, 2),
+        blunders_per_game=_average(sum((_as_float(row.blunders) for row in rows), 0.0), count, 2),
     )
 
 
@@ -105,18 +115,22 @@ def get_weakest_openings(
     rows = get_opening_metrics(session, minimum_games=minimum_games, limit=limit)
     openings = []
     for row in rows:
-        loss_rate = row.losses / row.games_count
-        average_cp_loss = row.total_cp_loss / row.user_move_count
-        mistakes_per_game = row.mistakes / row.games_count
-        blunders_per_game = row.blunders / row.games_count
+        games_count = _as_float(row.games_count)
+        user_move_count = _as_float(row.user_move_count)
+        if not games_count or not user_move_count:
+            continue
+        loss_rate = _as_float(row.losses) / games_count
+        average_cp_loss = _as_float(row.total_cp_loss) / user_move_count
+        mistakes_per_game = _as_float(row.mistakes) / games_count
+        blunders_per_game = _as_float(row.blunders) / games_count
         score = loss_rate * 100 + blunders_per_game * 25 + mistakes_per_game * 10 + average_cp_loss / 10
         openings.append(OpeningWeakness(
             opening_code=row.opening_code,
             opening_name=row.opening_name,
-            games_count=row.games_count,
-            wins=row.wins,
-            draws=row.draws,
-            losses=row.losses,
+            games_count=int(games_count),
+            wins=int(_as_float(row.wins)),
+            draws=int(_as_float(row.draws)),
+            losses=int(_as_float(row.losses)),
             loss_rate=round(loss_rate, 3),
             average_cp_loss=round(average_cp_loss, 1),
             mistakes_per_game=round(mistakes_per_game, 2),
@@ -140,7 +154,7 @@ def get_trends(session: Session, limit: int = 20) -> tuple[TrendPoint, ...]:
             user_color=row.user_color,
             opening_code=row.opening_code,
             opening_name=row.opening_name,
-            average_cp_loss=round(row.total_cp_loss / row.user_move_count, 1),
+            average_cp_loss=_average(row.total_cp_loss, row.user_move_count),
             mistakes=row.mistakes,
             blunders=row.blunders,
         )

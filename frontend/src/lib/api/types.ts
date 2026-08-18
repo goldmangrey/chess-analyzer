@@ -1,4 +1,4 @@
-export type AnalysisStatus = "pending" | "analyzing" | "completed" | "failed";
+export type AnalysisStatus = "pending" | "queued" | "processing" | "analyzing" | "completed" | "failed";
 export type GameResult = "win" | "draw" | "loss";
 export type UserColor = "white" | "black";
 export type MoveClassification = "normal" | "inaccuracy" | "mistake" | "blunder";
