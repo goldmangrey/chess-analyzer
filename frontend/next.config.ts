@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  ...(process.env.BUILD_STANDALONE === "true"
+    ? ({ output: "standalone" } satisfies NextConfig)
+    : {}),
   productionBrowserSourceMaps: false,
 };
 
