@@ -1,2 +1,2 @@
 [build]
-  command = "npm run build"
+command = "cd frontend && npm run build"
