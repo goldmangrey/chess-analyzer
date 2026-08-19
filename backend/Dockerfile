@@ -14,9 +14,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends stockfish ca-ce
 COPY --from=builder /opt/venv /opt/venv
 WORKDIR /app
 COPY --chown=app:app app ./app
+COPY --chown=app:app data ./data
 COPY --chown=app:app alembic ./alembic
 COPY --chown=app:app alembic.ini ./alembic.ini
 COPY --chown=app:app scripts/start_cloud_run.sh ./scripts/start_cloud_run.sh
+RUN test -r /app/data/openings.tsv
+
 RUN chmod +x ./scripts/start_cloud_run.sh
 USER app
 EXPOSE 8080
