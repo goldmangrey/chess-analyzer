@@ -14,7 +14,7 @@ const statusOptions = [
   { value: "pending", label: "Ожидает" }, { value: "analyzing", label: "Анализируется" }, { value: "completed", label: "Завершён" }, { value: "failed", label: "Ошибка" },
 ];
 const sortOptions = [
-  { value: "newest", label: "Сначала новые" }, { value: "oldest", label: "Сначала старые" }, { value: "most_blunders", label: "Больше зевков" }, { value: "highest_cp_loss", label: "Высокий CP Loss" },
+  { value: "newest", label: "Сначала новые" }, { value: "oldest", label: "Сначала старые" }, { value: "most_blunders", label: "Больше зевков" }, { value: "highest_cp_loss", label: "Самые неточные" },
 ];
 const limitOptions = [10, 20, 50].map((value) => ({ value: String(value), label: String(value) }));
 

@@ -3,7 +3,8 @@
 import { useState } from "react";
 
 import { BentoCard } from "@/components/ui";
-import type { CriticalMoment, ErrorClassification, MoveAnalysis, UserColor } from "@/lib/api/types";
+import type { CriticalMoment, ErrorClassification, MoveAnalysis, MoveCommentary, MoveHumanMetrics, OpeningMoveStatus, UserColor } from "@/lib/api/types";
+import { accuracyQualityLabel, formatAccuracy, formatWinPercent } from "@/lib/human-metrics";
 import { fullMoveReviewPresentation } from "@/lib/review-board";
 
 const toneClasses = {
@@ -14,37 +15,50 @@ const toneClasses = {
   blunder: "bg-blunder text-white",
 } as const;
 
-export function MoveReviewPanel({ move, error, moment, userColor }: { move: MoveAnalysis | null; error: ErrorClassification | null; moment: CriticalMoment | null; userColor: UserColor }) {
+const openingStatusLabels: Partial<Record<OpeningMoveStatus, string>> = {
+  book: "В дебютной базе",
+  deviation: "Первое отклонение от базы",
+  reentry: "Снова известная позиция",
+};
+
+export function MoveReviewPanel({ move, error, moment, userColor, commentary, openingStatus, humanMetrics }: { move: MoveAnalysis | null; error: ErrorClassification | null; moment: CriticalMoment | null; userColor: UserColor; commentary: MoveCommentary | null; openingStatus: OpeningMoveStatus | null; humanMetrics: MoveHumanMetrics | null }) {
   const [showFullVariation, setShowFullVariation] = useState(false);
-  const review = fullMoveReviewPresentation(move, error, moment, userColor);
+  const review = fullMoveReviewPresentation(move, error, moment, userColor, commentary);
 
   if (!review) {
-    return <BentoCard as="section" tone="muted" className="p-5 sm:p-6"><h2 className="text-xl font-semibold tracking-[-0.035em]">Разбор хода</h2><p className="mt-2 text-sm leading-6 text-text-secondary">Выберите ход в списке или используйте навигацию.</p></BentoCard>;
+    return <BentoCard as="section" tone="muted" className="p-4 sm:p-5"><h2 className="text-lg font-semibold tracking-[-0.025em]">Разбор хода</h2><p className="mt-1.5 text-sm leading-5 text-text-secondary">Выберите ход в списке или используйте навигацию.</p></BentoCard>;
   }
 
   const variation = review.principalVariation;
   return (
     <BentoCard as="section" className="overflow-hidden p-0" aria-live="polite">
-      <div className="border-b border-[var(--border-subtle)] bg-[linear-gradient(135deg,var(--surface-muted),var(--surface))] p-5 sm:p-6">
+      <div className="border-b border-[var(--border-subtle)] bg-[linear-gradient(135deg,var(--surface-muted),var(--surface))] p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-forest-light">{move?.is_user_move ? "Ваш ход" : "Ход соперника"}</p><h2 className="technical-number mt-1 text-3xl font-semibold tracking-[-0.045em]">{review.moveLabel}</h2></div>
+          <div><p className="text-xs font-semibold text-forest-light">{move?.is_user_move ? "Ваш ход" : "Ход соперника"}</p><h2 className="technical-number mt-1 text-2xl font-semibold tracking-[-0.04em]">{review.moveLabel}</h2></div>
           <span className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-bold shadow-sm ${toneClasses[review.quality.tone]}`}><span aria-hidden="true">{review.quality.symbol}</span>{review.label}</span>
         </div>
-        <p className="mt-4 max-w-prose text-base font-medium leading-7 text-text-primary">{review.explanation}</p>
-        {review.phaseLabel ? <p className="mt-2 text-xs font-semibold text-text-muted">{review.phaseLabel}</p> : null}
+        {review.commentary ? <div className="mt-3 max-w-prose">
+          <h3 className="text-base font-semibold leading-6 text-text-primary">{review.commentary.headline}</h3>
+          <p className="mt-1 text-sm leading-5 text-text-secondary">{review.commentary.summary}</p>
+          {review.commentary.details.map((detail) => <p key={detail} className="mt-1 line-clamp-2 text-xs leading-5 text-text-secondary">{detail}</p>)}
+        </div> : <p className="mt-3 max-w-prose text-sm leading-5 text-text-muted">Комментарий к этому ходу недоступен.</p>}
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {review.phaseLabel ? <span className="text-xs font-semibold text-text-muted">{review.phaseLabel}</span> : null}
+          {openingStatusLabels[openingStatus ?? "post_book"] ? <span className="rounded-full border border-forest/20 bg-forest/5 px-2.5 py-1 text-xs font-semibold text-forest">{openingStatusLabels[openingStatus ?? "post_book"]}</span> : null}
+        </div>
       </div>
 
-      <div className="space-y-5 p-5 sm:p-6">
+      <div className="space-y-3 p-4 sm:p-5">
         <div className={`grid gap-3 ${review.bestSan && !review.isBest ? "grid-cols-2" : ""}`}>
-          <div className="min-w-0 rounded-2xl border border-[var(--border-subtle)] bg-surface-muted p-3.5"><p className="text-xs font-semibold text-text-muted">Сыграно</p><p className="technical-number mt-1.5 break-words text-lg font-semibold sm:text-xl">{review.playedSan}</p>{review.isBest ? <p className="mt-2 text-xs font-bold text-best">Лучший ход</p> : null}</div>
-          {review.bestSan && !review.isBest ? <div className="min-w-0 rounded-2xl border border-best/30 bg-best/5 p-3.5"><p className="text-xs font-semibold text-text-muted">Лучше</p><p className="technical-number mt-1.5 break-words text-lg font-semibold text-best sm:text-xl">{review.bestSan}</p></div> : null}
+          <div className="min-w-0 rounded-xl bg-surface-muted p-3"><p className="text-xs font-semibold text-text-muted">Сыграно</p><p className="technical-number mt-1 break-words text-lg font-semibold">{review.playedSan}</p>{review.isBest ? <p className="mt-1 text-xs font-bold text-best">Лучший ход</p> : null}</div>
+          {review.bestSan && !review.isBest ? <div className="min-w-0 rounded-xl bg-best/5 p-3"><p className="text-xs font-semibold text-text-muted">Лучше</p><p className="technical-number mt-1 break-words text-lg font-semibold text-best">{review.bestSan}</p></div> : null}
         </div>
 
-        {(review.evaluationBefore !== null || review.evaluationAfter !== null) ? <div><p className="text-xs font-semibold text-text-muted">Оценка с вашей стороны</p><div className="mt-2 flex flex-wrap items-center gap-3" aria-label={`До хода ${review.evaluationBefore ?? "нет данных"}, после хода ${review.evaluationAfter ?? "нет данных"}`}><span className="technical-number text-lg font-semibold">{review.evaluationBefore ?? "—"}</span><span aria-hidden="true" className="text-text-muted">→</span><span className="technical-number text-lg font-semibold">{review.evaluationAfter ?? "—"}</span></div></div> : null}
+        {review.commentary?.recommendation && (!review.bestSan || review.isBest) ? <p className="rounded-2xl bg-best/5 px-4 py-3 text-sm font-semibold leading-6 text-best">{review.commentary.recommendation}</p> : null}
 
-        {review.centipawnLoss !== null ? <div className="flex items-center justify-between gap-4 border-t border-[var(--border-subtle)] pt-4"><span className="text-sm text-text-secondary">Потеря оценки (CP Loss)</span><strong className="technical-number text-sm">{review.centipawnLoss}</strong></div> : null}
+        {humanMetrics ? <div className="grid grid-cols-2 gap-3 border-t border-[var(--border-subtle)] pt-3"><div><p className="text-xs font-semibold text-text-muted">Шансы на победу</p><p className="technical-number mt-1 text-base font-semibold" aria-label={`До хода ${formatWinPercent(humanMetrics.win_percent_before)}, после ${formatWinPercent(humanMetrics.win_percent_after)}`}>{formatWinPercent(humanMetrics.win_percent_before)} <span className="text-text-muted">→</span> {formatWinPercent(humanMetrics.win_percent_after)}</p></div><div><p className="text-xs font-semibold text-text-muted">Точность хода</p><p className="technical-number mt-1 text-base font-semibold">{formatAccuracy(humanMetrics.accuracy)}</p><p className="mt-0.5 text-xs text-text-muted">{accuracyQualityLabel(humanMetrics.quality_band)}</p></div></div> : null}
 
-        {variation ? <div className="border-t border-[var(--border-subtle)] pt-4"><div className="flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-semibold">Вариант движка</p>{variation.truncated ? <button type="button" aria-expanded={showFullVariation} onClick={() => setShowFullVariation((value) => !value)} className="focus-ring min-h-10 rounded-xl px-3 text-xs font-semibold text-forest hover:bg-surface-muted">{showFullVariation ? "Скрыть полный вариант" : "Показать весь вариант"}</button> : null}</div><p className="technical-number mt-2 break-words text-sm leading-6 text-text-secondary">{showFullVariation ? variation.full : variation.preview}</p></div> : null}
+        {variation ? <div className="border-t border-[var(--border-subtle)] pt-3"><div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-semibold text-text-muted">Вариант анализа</p>{variation.truncated ? <button type="button" aria-expanded={showFullVariation} onClick={() => setShowFullVariation((value) => !value)} className="focus-ring min-h-10 rounded-xl px-3 text-xs font-semibold text-forest hover:bg-surface-muted">{showFullVariation ? "Скрыть полный вариант" : "Показать весь вариант"}</button> : null}</div><p className="technical-number mt-1.5 break-words text-xs leading-5 text-text-secondary">{showFullVariation ? variation.full : variation.preview}</p></div> : null}
       </div>
     </BentoCard>
   );

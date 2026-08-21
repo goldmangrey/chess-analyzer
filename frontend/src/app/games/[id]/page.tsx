@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { AnalysisError, AnalysisPage } from "@/components/analysis";
 import { AppShell } from "@/components/layout";
 import { ApiError, fetchGameIntelligence, fetchGameMoves, fetchSystemStatus } from "@/lib/api";
+import { parseInitialSelectedPly, type SearchParamValue } from "@/lib/analysis-url";
 
 export const metadata: Metadata = { title: "Chess AI Teacher — Анализ партии" };
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ async function loadAnalysis(gameId: number) {
   }
 }
 
-export default async function GameAnalysisRoute({ params }: { params: Promise<{ id: string }> }) {
+export default async function GameAnalysisRoute({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ply?: SearchParamValue }> }) {
   const rawId = (await params).id;
   const gameId = Number(rawId);
   if (!Number.isSafeInteger(gameId) || gameId < 1) notFound();
@@ -30,5 +31,7 @@ export default async function GameAnalysisRoute({ params }: { params: Promise<{ 
   const result = await loadAnalysis(gameId);
   if (result.status === "not-found") notFound();
   if (result.status === "unavailable") return <AppShell activeSection="games" engineStatus="unavailable"><AnalysisError /></AppShell>;
-  return <AppShell activeSection="games" engineStatus={result.systemStatus.status}><AnalysisPage key={`${result.intelligence.game.id}:${result.intelligence.analysis.status}`} intelligence={result.intelligence} moves={result.moves} /></AppShell>;
+  const maxPly = result.moves.reduce((maximum, move) => Math.max(maximum, move.ply), 0);
+  const initialSelectedPly = parseInitialSelectedPly((await searchParams).ply, maxPly);
+  return <AppShell activeSection="games" engineStatus={result.systemStatus.status}><AnalysisPage key={`${result.intelligence.game.id}:${result.intelligence.analysis.status}:${initialSelectedPly}`} intelligence={result.intelligence} moves={result.moves} initialSelectedPly={initialSelectedPly} /></AppShell>;
 }

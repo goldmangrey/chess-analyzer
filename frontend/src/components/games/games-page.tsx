@@ -16,7 +16,7 @@ export function GamesPage({ data, state }: { data: GamesListResponse; state: Gam
   return (
     <ToastProvider>
       <PageHeading
-        eyebrow="Games history"
+        eyebrow="История партий"
         title="Ваши партии"
         description={`${data.total} ${data.total === 1 ? "партия" : "партий"} по текущему запросу`}
         action={<div className="flex flex-wrap gap-3"><GamesRefreshButton /><Link href="/#import" className="focus-ring inline-flex min-h-11 items-center rounded-full bg-forest px-5 text-sm font-semibold text-white shadow-[var(--shadow-accent)] hover:bg-forest-light">Импортировать партии</Link></div>}

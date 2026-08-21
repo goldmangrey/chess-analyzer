@@ -3,24 +3,23 @@
 import { useState } from "react";
 
 import { BentoGrid, BentoGridItem } from "@/components/layout";
-import { fetchAppSettings, fetchDashboard, fetchGames } from "@/lib/api";
-import type { AppSettings, StatisticsDashboard, SystemStatus } from "@/lib/api/types";
+import { fetchAppSettings, fetchDashboard, fetchGames, fetchPlayerIntelligence } from "@/lib/api";
+import type { AppSettings, PlayerIntelligenceResponse, StatisticsDashboard, SystemStatus } from "@/lib/api/types";
+import { buildDashboardViewModel } from "@/lib/dashboard-view-model";
 import { useBackgroundPolling } from "@/hooks/use-background-polling";
 import { DASHBOARD_POLL_INTERVAL_MS } from "@/lib/polling";
 
-import { AnalyzedGamesCard } from "./analyzed-games-card";
-import { BlunderFreeCard } from "./blunder-free-card";
+import { DashboardTierOne, OpeningFoundation, RecurringMistakesFoundation, SegmentFoundation } from "./dashboard-intelligence-foundation";
 import { ImportCard } from "./import-card";
-import { PerformanceChart } from "./performance-chart";
-import { PrimaryMetricCard } from "./primary-metric-card";
+import { ProgressComparison } from "./progress-comparison";
+import { ChessProfileHeroUnavailable } from "./chess-profile-hero";
 import { RecentGamesCard } from "./recent-games-card";
-import { WeakestOpeningsCard } from "./weakest-openings-card";
-import { WelcomeCard } from "./welcome-card";
 import { EmptyDashboard } from "./empty-dashboard";
 import { SystemDiagnosticCard } from "./system-diagnostic-card";
 
-export function DashboardPage({ data, systemStatus, settings }: { data: StatisticsDashboard; systemStatus: SystemStatus; settings: AppSettings }) {
+export function DashboardPage({ data, intelligence, systemStatus, settings }: { data: StatisticsDashboard; intelligence: PlayerIntelligenceResponse | null; systemStatus: SystemStatus; settings: AppSettings }) {
   const [liveData, setLiveData] = useState(data);
+  const [liveIntelligence, setLiveIntelligence] = useState<PlayerIntelligenceResponse | null>(intelligence);
   const [liveSettings, setLiveSettings] = useState(settings);
   const [dashboardLoadError, setDashboardLoadError] = useState(false);
 
@@ -28,11 +27,13 @@ export function DashboardPage({ data, systemStatus, settings }: { data: Statisti
     intervalMs: DASHBOARD_POLL_INTERVAL_MS,
     fetcher: async (signal) => Promise.allSettled([
       fetchDashboard(signal),
+      fetchPlayerIntelligence(30, signal),
       fetchAppSettings(signal),
       fetchGames({ limit: 20, sort: "newest" }, signal),
     ]),
-    onSuccess: ([dashboardResult, settingsResult, gamesResult]) => {
-      setDashboardLoadError(dashboardResult.status === "rejected");
+    onSuccess: ([dashboardResult, intelligenceResult, settingsResult, gamesResult]) => {
+      setDashboardLoadError(dashboardResult.status === "rejected" || intelligenceResult.status === "rejected");
+      if (intelligenceResult.status === "fulfilled") setLiveIntelligence(intelligenceResult.value);
       if (dashboardResult.status === "fulfilled") {
         const statuses = new Map(
           gamesResult.status === "fulfilled"
@@ -51,28 +52,27 @@ export function DashboardPage({ data, systemStatus, settings }: { data: Statisti
     },
   });
 
-  const { summary, comparison, trends, weakest_openings, recent_games } = liveData;
+  const { summary, recent_games } = liveData;
+  const model = liveIntelligence ? buildDashboardViewModel(liveIntelligence, liveSettings) : null;
   const refreshStatus = <div aria-live="polite" className="mb-3 min-h-4 text-right text-xs text-text-muted">{isRefreshing ? "Обновляем данные…" : dashboardLoadError ? <span className="text-mistake">Не удалось обновить статистику. Показаны последние загруженные данные.</span> : ""}</div>;
   if (summary.total_games === 0) {
     return <>{refreshStatus}<SystemDiagnosticCard status={systemStatus} />
       <BentoGrid>
-        <BentoGridItem className="md:col-span-6 xl:col-span-8"><WelcomeCard summary={summary} comparison={comparison} /></BentoGridItem>
         <BentoGridItem className="md:col-span-6 xl:col-span-4"><ImportCard settings={liveSettings} /></BentoGridItem>
         <BentoGridItem className="md:col-span-6 xl:col-span-12"><EmptyDashboard /></BentoGridItem>
       </BentoGrid>
     </>;
   }
 
+  if (!model || !liveIntelligence) {
+    return <>{refreshStatus}<SystemDiagnosticCard status={systemStatus} /><div className="space-y-4"><ChessProfileHeroUnavailable /><BentoGrid><BentoGridItem className="md:col-span-6 xl:col-span-4"><ImportCard settings={liveSettings} /></BentoGridItem><BentoGridItem className="md:col-span-6 xl:col-span-8"><RecentGamesCard games={recent_games} /></BentoGridItem></BentoGrid></div></>;
+  }
+
   return <>{refreshStatus}<SystemDiagnosticCard status={systemStatus} />
-    <BentoGrid>
-      <BentoGridItem className="md:col-span-6 xl:col-span-8"><WelcomeCard summary={summary} comparison={comparison} /></BentoGridItem>
-      <BentoGridItem className="md:col-span-6 xl:col-span-4"><ImportCard settings={liveSettings} /></BentoGridItem>
-      <BentoGridItem className="md:col-span-3 xl:col-span-5"><PrimaryMetricCard summary={summary} comparison={comparison} /></BentoGridItem>
-      <BentoGridItem className="md:col-span-3 xl:col-span-4"><AnalyzedGamesCard analyzed={summary.analyzed_games} total={summary.total_games} /></BentoGridItem>
-      <BentoGridItem className="md:col-span-3 xl:col-span-3"><BlunderFreeCard percentage={summary.blunder_free_percentage} games={summary.blunder_free_games} /></BentoGridItem>
-      <BentoGridItem className="md:col-span-6 xl:col-span-8"><PerformanceChart trends={trends} /></BentoGridItem>
-      <BentoGridItem className="md:col-span-6 xl:col-span-4"><WeakestOpeningsCard openings={weakest_openings} /></BentoGridItem>
-      <BentoGridItem className="md:col-span-6 xl:col-span-12"><RecentGamesCard games={recent_games} /></BentoGridItem>
-    </BentoGrid>
+    <div className="space-y-4">
+      <DashboardTierOne model={model} />
+      <section data-dashboard-tier="2" aria-label="Повторяющиеся ошибки и прогресс"><BentoGrid className="gap-4"><BentoGridItem className="md:col-span-3 xl:col-span-5"><RecurringMistakesFoundation model={model} /></BentoGridItem><BentoGridItem className="md:col-span-3 xl:col-span-7"><ProgressComparison progress={model.progress} /></BentoGridItem></BentoGrid></section>
+      <section data-dashboard-tier="3" aria-label="Дебюты, сегменты и партии" className="space-y-4"><BentoGrid className="gap-4"><BentoGridItem className="md:col-span-3 xl:col-span-7"><OpeningFoundation model={model} /></BentoGridItem><BentoGridItem className="md:col-span-3 xl:col-span-5"><SegmentFoundation model={model} /></BentoGridItem><BentoGridItem className="md:col-span-6 xl:col-span-4"><ImportCard settings={liveSettings} /></BentoGridItem></BentoGrid><RecentGamesCard games={recent_games} /></section>
+    </div>
   </>;
 }

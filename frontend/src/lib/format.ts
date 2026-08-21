@@ -31,10 +31,6 @@ export function formatPercentage(value: number | null | undefined): string {
   return isFiniteNumber(value) ? `${oneDecimalFormatter.format(value)}%` : "—";
 }
 
-export function formatCpLoss(value: number | null | undefined): string {
-  return isFiniteNumber(value) ? oneDecimalFormatter.format(value) : "—";
-}
-
 export function formatDate(value: string | null | undefined): string {
   if (!value) return "Дата неизвестна";
   const date = new Date(value);

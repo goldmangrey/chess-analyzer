@@ -100,6 +100,18 @@ def test_opening_is_resolved_from_moves_without_opening_or_eco_url_headers() -> 
     )
 
 
+def test_position_recognition_recovers_b13_name_without_opening_header() -> None:
+    parsed = parse_pgn(
+        pgn_fixture(extra='[ECO "B13"]', moves="1. e4 c6 2. d4 d5 3. exd5 cxd5"),
+        "Yeskendir",
+        "b13-position",
+    )
+    assert (parsed.opening_code, parsed.opening_name) == (
+        "B13",
+        "Caro-Kann Defense: Exchange Variation",
+    )
+
+
 def test_chesscom_eco_url_is_only_a_canonicalized_fallback() -> None:
     parsed = parse_pgn(
         pgn_fixture(

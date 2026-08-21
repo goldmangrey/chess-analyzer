@@ -98,7 +98,9 @@ def test_completed_game_builds_all_unified_sections_without_endgame() -> None:
     assert intelligence.intelligence_version == "1"
     assert intelligence.analysis.intelligence_ready is True
     assert intelligence.game.opponent == "Opponent"
-    assert (intelligence.opening.eco, intelligence.opening.name) == ("B13", "Test Opening")
+    assert intelligence.opening.eco == "C20"
+    assert intelligence.opening.family == "King's Pawn Game"
+    assert intelligence.opening.deepest_match_ply == 3
     assert intelligence.summary is not None
     assert (intelligence.summary.user_moves, intelligence.summary.average_cp_loss) == (2, 500.0)
     assert set(intelligence.phases) == {GamePhase.OPENING, GamePhase.MIDDLEGAME}
@@ -106,6 +108,8 @@ def test_completed_game_builds_all_unified_sections_without_endgame() -> None:
     assert intelligence.critical_moments[0].type.value == "missed_mate"
     assert intelligence.errors[0].primary_type == ErrorType.MISSED_MATE
     assert intelligence.error_breakdown == {ErrorType.MISSED_MATE: 1}
+    assert {entry.ply for entry in intelligence.move_reviews} == {1, 3}
+    assert intelligence.move_reviews[-1].commentary.intent.value == "missed_mate"
 
 
 def test_concrete_tactical_type_is_primary_and_breakdown_does_not_count_secondary() -> None:
@@ -149,6 +153,7 @@ def test_incomplete_analysis_does_not_load_or_invent_intelligence(status) -> Non
     assert intelligence.critical_moments == ()
     assert intelligence.errors == ()
     assert intelligence.error_breakdown == {}
+    assert intelligence.move_reviews == ()
 
 
 def test_legacy_optional_fields_and_missing_opening_name_are_safe() -> None:
@@ -165,7 +170,8 @@ def test_legacy_optional_fields_and_missing_opening_name_are_safe() -> None:
     moves[0].best_move_san = None
     moves[0].principal_variation = None
     intelligence = build(game, moves)
-    assert intelligence.opening.name is None
+    assert intelligence.opening.name == "King's Pawn Game"
+    assert intelligence.opening.family == "King's Pawn Game"
     assert intelligence.phases == {}
     assert intelligence.critical_moments == ()
     assert intelligence.errors[0].confidence == ErrorConfidence.LOW
@@ -214,3 +220,33 @@ def test_taxonomy_pgn_context_is_prepared_once_per_build(monkeypatch) -> None:
     monkeypatch.setattr(intelligence_module, "prepare_taxonomy_contexts", counted)
     build(game, moves)
     assert calls == 1
+
+
+def test_opening_recognition_runs_once_and_commentary_is_deterministic(monkeypatch) -> None:
+    game, moves = analyzed_game(chess.STARTING_FEN, "1. e4 e5 2. Qh5", error_ply=3)
+    original = intelligence_module.recognize_pgn
+    calls = 0
+
+    def counted(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(intelligence_module, "recognize_pgn", counted)
+    first = build(game, moves)
+    assert calls == 1
+    second = build(game, moves)
+    assert calls == 2
+    assert first.opening == second.opening
+    assert first.move_reviews == second.move_reviews
+
+
+def test_malformed_pgn_preserves_eco_only_fallback_without_commentary_failure() -> None:
+    game, moves = analyzed_game(chess.STARTING_FEN, "1. e4", opening_name=None)
+    game.pgn = "malformed ["
+    game.opening_code = "B13"
+    intelligence = build(game, moves)
+    assert intelligence.opening.eco == "B13"
+    assert intelligence.opening.name is None
+    assert intelligence.opening.family is None
+    assert len(intelligence.move_reviews) == 1

@@ -14,10 +14,10 @@ import { AnalysisRefreshButton } from "./analysis-refresh-button";
 import { AnalysisWorkspace } from "./analysis-workspace";
 import { GameOverview } from "./game-overview";
 
-export function AnalysisPage({ intelligence, moves }: { intelligence: GameIntelligenceResponse; moves: MoveAnalysis[] }) {
+export function AnalysisPage({ intelligence, moves, initialSelectedPly = 0 }: { intelligence: GameIntelligenceResponse; moves: MoveAnalysis[]; initialSelectedPly?: number }) {
   const [liveIntelligence, setLiveIntelligence] = useState(intelligence);
   const [liveMoves, setLiveMoves] = useState(moves);
-  const [selectedPly, setSelectedPly] = useState(0);
+  const [selectedPly, setSelectedPly] = useState(initialSelectedPly);
 
   const selectPly = useCallback((ply: number) => setSelectedPly(ply), []);
   const polling = shouldPollAnalysis(liveIntelligence.analysis.status);
@@ -41,7 +41,7 @@ export function AnalysisPage({ intelligence, moves }: { intelligence: GameIntell
   return (
     <ToastProvider>
       <GameOverview intelligence={liveIntelligence} />
-      <div className="mt-3 flex min-h-10 min-w-0 flex-wrap items-center justify-center gap-2 sm:justify-end">
+      <div className="mt-2 flex min-h-9 min-w-0 flex-wrap items-center justify-center gap-2 sm:justify-end">
         {polling ? <span aria-live="polite" className="text-xs text-text-muted">{isRefreshing ? "Проверяем статус анализа…" : "Статус обновляется автоматически"}</span> : null}
         <AnalysisRefreshButton />
         {hasUsableAnalysis ? <AnalyzeGameButton gameId={liveIntelligence.game.id} status="completed" /> : null}

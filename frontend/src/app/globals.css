@@ -33,8 +33,8 @@
   --blunder: #e95d5d;
   --blunder-text: #a43d3d;
   --blunder-surface: #ffeaea;
-  --board-light: #f1ead8;
-  --board-dark: #4f6f52;
+  --board-light: #f3eddd;
+  --board-dark: #5d8b61;
   --board-last-move: rgba(243, 204, 88, 0.55);
   --board-best-move: #54b881;
   --board-mistake: rgba(238, 139, 67, 0.72);

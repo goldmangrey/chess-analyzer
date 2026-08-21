@@ -146,6 +146,7 @@ def parse_pgn(
         eco=_optional_header(headers, "ECO"),
         opening_name=_optional_header(headers, "Opening"),
         eco_url=_optional_header(headers, "ECOUrl"),
+        starting_board=game.board(),
     )
 
     return ParsedPgnGame(

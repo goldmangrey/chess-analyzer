@@ -4,7 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { LocalDateTime, StatusPill } from "@/components/ui";
 import type { ApiGameListItem } from "@/lib/api/types";
-import { formatCpLoss } from "@/lib/format";
+import { localizeOpeningName } from "@/lib/opening-localization";
 import { analysisStatusLabel, analysisStatusTone, gameResultLabel } from "@/lib/status";
 
 const resultClasses = {
@@ -31,9 +31,8 @@ export function GameRow({ game }: { game: ApiGameListItem }) {
         </div>
       </td>
       <td className="px-3 py-4"><p className="whitespace-nowrap text-sm"><LocalDateTime value={game.played_at} dateOnly /></p><p className="technical-number mt-1 text-xs text-text-muted">{game.time_control ?? "—"}</p></td>
-      <td className="max-w-64 px-3 py-4"><p className="truncate text-sm">{game.opening_name ?? game.opening_code ?? "Дебют не определён"}</p>{game.opening_name && game.opening_code ? <p className="mt-1 text-xs font-bold text-forest-light">{game.opening_code}</p> : null}</td>
+      <td className="max-w-64 px-3 py-4"><p className="truncate text-sm">{localizeOpeningName(game.opening_name) ?? game.opening_code ?? "Дебют не определён"}</p>{game.opening_name && game.opening_code ? <p className="mt-1 text-xs font-bold text-forest-light">{game.opening_code}</p> : null}</td>
       <td className="px-3 py-4"><span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${resultClasses[game.result]}`}>{gameResultLabel(game.result)}</span></td>
-      <td className="technical-number px-3 py-4 text-sm">{formatCpLoss(game.average_cp_loss)}</td>
       <td className="technical-number px-3 py-4 text-sm">{game.mistakes}</td>
       <td className="technical-number px-3 py-4 text-sm text-blunder-text">{game.blunders}</td>
       <td className="px-3 py-4"><StatusPill tone={analysisStatusTone(game.analysis_status)} dot className={game.analysis_status === "analyzing" ? "[&>span:first-child]:animate-pulse motion-reduce:[&>span:first-child]:animate-none" : undefined}>{analysisStatusLabel(game.analysis_status)}</StatusPill></td>

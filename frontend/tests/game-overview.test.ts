@@ -3,10 +3,10 @@ import test from "node:test";
 import { readFile } from "node:fs/promises";
 
 import type { GameIntelligenceResponse, GamePhaseStatistics } from "../src/lib/api/types.ts";
-import { canShowIntelligence, formatAcpl, formatGameResult, formatOpening, formatTaxonomyLabel, formatTimeControl, presentPhases, selectMainWeakness, selectPlayers, selectStrongestPhase, selectWeakestPhase } from "../src/lib/game-overview.ts";
+import { canShowIntelligence, formatGameResult, formatOpening, formatPlyMove, formatTaxonomyLabel, formatTimeControl, presentPhases, selectMainWeakness, selectPlayers, selectStrongestPhase, selectWeakestPhase } from "../src/lib/game-overview.ts";
 
 function phase(average_cp_loss: number | null, overrides: Partial<GamePhaseStatistics> = {}): GamePhaseStatistics {
-  return { start_ply: 1, end_ply: 20, user_moves: 10, average_cp_loss, inaccuracies: 1, mistakes: 0, blunders: 0, ...overrides };
+  return { start_ply: 1, end_ply: 20, user_moves: 10, average_cp_loss, accuracy: average_cp_loss === null ? null : 100 - average_cp_loss / 2, accuracy_eligible_moves: average_cp_loss === null ? 0 : 10, accuracy_coverage_rate: average_cp_loss === null ? 0 : 1, accuracy_quality_band: "good", inaccuracies: 1, mistakes: 0, blunders: 0, ...overrides };
 }
 
 function game(overrides: Partial<GameIntelligenceResponse["game"]> = {}): GameIntelligenceResponse["game"] {
@@ -28,18 +28,18 @@ test("time controls convert stored seconds without mutating source data", () => 
 });
 
 test("opening presentation supports name, ECO-only and absent data", () => {
-  assert.deepEqual(formatOpening({ name: "Caro-Kann Defense", eco: "B13" }), { name: "Caro-Kann Defense", eco: "B13" });
-  assert.deepEqual(formatOpening({ name: null, eco: "A00" }), { name: "A00", eco: null });
+  assert.deepEqual(formatOpening({ name: "Caro-Kann Defense", eco: "B13" }), { name: "Защита Каро-Канн", eco: "B13", family: "Защита Каро-Канн", variation: null, subvariation: null });
+  assert.deepEqual(formatOpening({ name: null, eco: "A00" }), { name: "A00", eco: null, family: null, variation: null, subvariation: null });
   assert.equal(formatOpening({ name: null, eco: null }), null);
 });
 
-test("ACPL is compact and null-safe", () => {
-  assert.equal(formatAcpl(98.23456), "98,2");
-  assert.equal(formatAcpl(31), "31");
-  assert.equal(formatAcpl(null), "—");
+test("opening move labels distinguish white and black plies", () => {
+  assert.equal(formatPlyMove(11, "Be3"), "6.Be3");
+  assert.equal(formatPlyMove(12, "Be3"), "6...Be3");
+  assert.equal(formatPlyMove(null, "Be3"), null);
 });
 
-test("strongest and weakest phases use lower ACPL as better", () => {
+test("strongest and weakest phases use higher human accuracy as better", () => {
   const phases = { opening: phase(31), middlegame: phase(126), endgame: phase(54) };
   assert.equal(selectStrongestPhase(phases)?.key, "opening");
   assert.equal(selectWeakestPhase(phases)?.key, "middlegame");
@@ -67,7 +67,7 @@ test("main weakness selects the largest primary taxonomy count", () => {
 });
 
 test("taxonomy labels are localized", () => {
-  assert.equal(formatTaxonomyLabel("hanging_piece"), "Потеря фигуры");
+  assert.equal(formatTaxonomyLabel("hanging_piece"), "Фигуры под ударом");
   assert.equal(formatTaxonomyLabel("fork"), "Вилки");
   assert.equal(formatTaxonomyLabel("back_rank"), "Слабость последней горизонтали");
 });

@@ -23,10 +23,10 @@ export function EvaluationTimeline({ moves, criticalMoments, userColor, selected
   const mounted = useSyncExternalStore(subscribe, () => true, () => false);
   const data = useMemo(() => buildEvaluationTimeline(moves, userColor, criticalMoments, selectedPly), [criticalMoments, moves, selectedPly, userColor]);
   return (
-    <BentoCard as="section" className="p-5 sm:p-6 lg:p-7">
-      <div><p className="text-xs font-bold uppercase tracking-[0.18em] text-forest-light">Оценка с вашей стороны</p><h2 className="mt-2 text-2xl font-semibold tracking-[-0.04em]">Ход партии</h2><p className="mt-2 text-sm text-text-muted">Нажмите на точку, чтобы перейти к позиции.</p></div>
-      {data.length < 3 ? <div className="grid h-56 place-items-center text-sm text-text-muted">Недостаточно данных для timeline</div> : (
-        <div className="mt-4 h-60 sm:h-64 lg:h-72" aria-label="Изменение оценки позиции с точки зрения пользователя">
+    <BentoCard as="section" className="h-full p-4 sm:p-5">
+      <div><p className="text-xs font-semibold text-forest-light">Оценка с вашей стороны</p><h2 className="mt-1 text-lg font-semibold tracking-[-0.025em]">Ход партии</h2><p className="mt-1 text-xs text-text-muted">Нажмите на точку, чтобы перейти к позиции.</p></div>
+      {data.length < 3 ? <div className="grid h-40 place-items-center text-sm text-text-muted">Недостаточно данных для графика</div> : (
+        <div className="mt-3 h-44 sm:h-48" aria-label="Изменение оценки позиции с точки зрения пользователя">
           {mounted ? <ResponsiveContainer width="100%" height="100%"><LineChart data={data} margin={{ top: 12, right: 10, bottom: 0, left: -18 }} onClick={(state) => { const index = Number(state.activeTooltipIndex); if (Number.isInteger(index) && data[index]) onSelect(data[index].ply); }}>
             <ReferenceArea y1={0} y2={TIMELINE_EVALUATION_LIMIT} fill="var(--mint-surface)" fillOpacity={0.45} /><ReferenceArea y1={-TIMELINE_EVALUATION_LIMIT} y2={0} fill="var(--yellow-surface)" fillOpacity={0.28} />
             <CartesianGrid vertical={false} stroke="var(--border-subtle)" strokeDasharray="3 8" /><ReferenceLine y={0} stroke="var(--border-strong)" strokeWidth={1.5} /><ReferenceLine x={selectedPly} stroke="var(--forest)" strokeDasharray="3 5" strokeOpacity={0.55} />
@@ -36,7 +36,7 @@ export function EvaluationTimeline({ moves, criticalMoments, userColor, selected
           </LineChart></ResponsiveContainer> : null}
         </div>
       )}
-      <p className="sr-only">Timeline содержит {data.length - 1} оценок ходов с точки зрения пользователя. Критические моменты и качество каждого хода доступны в списке ходов ниже.</p>
+      <p className="sr-only">График содержит {data.length - 1} оценок ходов с точки зрения пользователя. Критические моменты и качество каждого хода доступны в списке ходов.</p>
     </BentoCard>
   );
 }

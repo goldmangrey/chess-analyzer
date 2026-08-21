@@ -47,9 +47,10 @@ test("user-POV evaluation and mate values are formatted without sentinels", () =
 });
 
 test("taxonomy is concise while shared explanation remains deterministic", () => {
-  const item = criticalMomentPresentation(moment(), error(), 1);
-  assert.equal(item.conciseReason, "Допущенный мат");
-  assert.match(item.explanation, /форсированный мат/);
+  const commentary = { headline: "Форсированный мат", summary: "У соперника появляется форсированный мат.", details: [], recommendation: null, intent: "allowed_mate" };
+  const item = criticalMomentPresentation(moment(), error(), 1, commentary);
+  assert.equal(item.conciseReason, commentary.headline);
+  assert.equal(item.explanation, commentary.summary);
 });
 
 test("low-confidence taxonomy is not overclaimed", () => {

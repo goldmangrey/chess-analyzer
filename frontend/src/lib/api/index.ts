@@ -2,6 +2,7 @@ export * from "./client";
 export * from "./dashboard";
 export * from "./errors";
 export * from "./games";
+export * from "./player-intelligence";
 export * from "./import";
 export * from "./system";
 export * from "./settings";

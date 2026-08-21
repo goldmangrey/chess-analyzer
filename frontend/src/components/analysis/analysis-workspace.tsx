@@ -19,6 +19,7 @@ export function AnalysisWorkspace({ intelligence, moves, selectedPly, onSelect }
   const evaluation = selectedMove?.evaluation_after_cp ?? (selectedPly === 0 ? moves[0]?.evaluation_before_cp ?? null : null);
   const selectedError = useMemo(() => intelligence.errors.find((error) => error.ply === selectedPly) ?? null, [intelligence.errors, selectedPly]);
   const selectedMoment = useMemo(() => intelligence.critical_moments.find((moment) => moment.ply === selectedPly) ?? null, [intelligence.critical_moments, selectedPly]);
+  const selectedReview = useMemo(() => intelligence.move_reviews?.find((review) => review.ply === selectedPly) ?? null, [intelligence.move_reviews, selectedPly]);
 
   function selectPly(ply: number) { onSelect(Math.max(0, Math.min(total, ply))); }
   function selectCriticalPly(ply: number) {
@@ -43,14 +44,12 @@ export function AnalysisWorkspace({ intelligence, moves, selectedPly, onSelect }
   }, [onSelect, selectedPly, total]);
 
   return (
-    <div className="mt-5 space-y-5 sm:mt-6 sm:space-y-6">
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,7fr)_minmax(350px,5fr)] xl:items-start xl:gap-6">
-        <ChessBoardPanel fen={fen} orientation={intelligence.game.user_color} move={selectedMove} evaluation={evaluation} selectedPly={selectedPly} total={total} onSelect={selectPly} />
-        <MoveReviewPanel key={selectedPly} move={selectedMove} error={selectedError} moment={selectedMoment} userColor={intelligence.game.user_color} />
-      </div>
-      <CriticalMomentsCard intelligence={intelligence} selectedPly={selectedPly} onSelectPly={selectCriticalPly} />
-      <EvaluationTimeline moves={moves} criticalMoments={intelligence.critical_moments} userColor={intelligence.game.user_color} selectedPly={selectedPly} onSelect={selectPly} />
-      <MoveList moves={moves} criticalMoments={intelligence.critical_moments} selectedPly={selectedPly} onSelect={selectPly} />
+    <div className="mt-4 grid min-w-0 gap-4 sm:mt-5 xl:grid-cols-[minmax(0,7fr)_minmax(350px,5fr)] xl:items-stretch">
+      <div className="min-w-0 xl:row-span-2"><ChessBoardPanel fen={fen} orientation={intelligence.game.user_color} move={selectedMove} evaluation={evaluation} selectedPly={selectedPly} total={total} onSelect={selectPly} /></div>
+      <div className="min-w-0 xl:col-start-2 xl:row-start-1"><MoveReviewPanel key={selectedPly} move={selectedMove} error={selectedError} moment={selectedMoment} userColor={intelligence.game.user_color} commentary={selectedReview?.commentary ?? null} openingStatus={selectedReview?.opening_status ?? null} humanMetrics={selectedReview?.human_metrics ?? null} /></div>
+      <div className="min-w-0 xl:col-start-1 xl:row-start-3"><CriticalMomentsCard intelligence={intelligence} selectedPly={selectedPly} onSelectPly={selectCriticalPly} /></div>
+      <div className="min-w-0 xl:col-start-2 xl:row-start-3"><EvaluationTimeline moves={moves} criticalMoments={intelligence.critical_moments} userColor={intelligence.game.user_color} selectedPly={selectedPly} onSelect={selectPly} /></div>
+      <div className="min-h-0 min-w-0 xl:col-start-2 xl:row-start-2"><MoveList moves={moves} criticalMoments={intelligence.critical_moments} selectedPly={selectedPly} onSelect={selectPly} /></div>
     </div>
   );
 }

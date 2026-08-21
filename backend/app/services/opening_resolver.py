@@ -10,6 +10,8 @@ from urllib.parse import unquote, urlparse
 import chess
 import chess.pgn
 
+from app.services.opening_recognizer import recognize_moves
+
 
 OpeningSource = Literal["local_database", "pgn_header", "provider_metadata", "eco_only", "unknown"]
 OpeningConfidence = Literal["high", "medium", "low", "none"]
@@ -112,19 +114,49 @@ def resolve_opening(
     eco: str | None = None,
     opening_name: str | None = None,
     eco_url: str | None = None,
+    starting_board: chess.Board | None = None,
 ) -> OpeningInfo:
-    """Resolve the deepest known opening without provider-specific runtime I/O."""
+    """Resolve position-first, then preserve reliable provider metadata fallbacks."""
     normalized_moves = tuple(move.uci() if isinstance(move, chess.Move) else move for move in moves)
-    database = _database()
-    match: tuple[str, str] | None = None
-    for length in range(1, len(normalized_moves) + 1):
-        candidate = database.by_moves.get(normalized_moves[:length])
-        if candidate is not None:
-            match = candidate
-    if match is not None:
-        resolved_eco, resolved_name = match
-        family, variation = _name_parts(resolved_name)
-        return OpeningInfo(resolved_eco, resolved_name, family, variation, "local_database", "high")
+    recognition = recognize_moves(
+        normalized_moves,
+        starting_board=starting_board,
+        eco=eco,
+        opening_name=opening_name,
+    )
+    if recognition.source == "position_book":
+        header_name = _clean(opening_name)
+        if header_name:
+            header_family, header_variation = _name_parts(header_name)
+            header_levels = (
+                len(tuple(part for part in header_variation.split(",") if part.strip()))
+                if header_variation
+                else 0
+            )
+            recognized_levels = len(
+                tuple(
+                    part
+                    for part in (recognition.name or "").partition(":")[2].split(",")
+                    if part.strip()
+                )
+            )
+            if header_levels > recognized_levels:
+                return OpeningInfo(
+                    _eco(eco) or recognition.eco,
+                    header_name,
+                    header_family,
+                    header_variation,
+                    "pgn_header",
+                    "medium",
+                )
+        return OpeningInfo(
+            recognition.eco,
+            recognition.name,
+            recognition.family,
+            recognition.variation,
+            "local_database",
+            "high",
+        )
 
     normalized_eco = _eco(eco)
     header_name = _clean(opening_name)
@@ -148,10 +180,4 @@ def resolve_opening(
 
 
 def known_opening_ply(moves: Iterable[chess.Move | str]) -> int | None:
-    normalized_moves = tuple(move.uci() if isinstance(move, chess.Move) else move for move in moves)
-    matched = [
-        length
-        for length in range(1, len(normalized_moves) + 1)
-        if normalized_moves[:length] in _database().by_moves
-    ]
-    return max(matched, default=None)
+    return recognize_moves(moves).deepest_match_ply

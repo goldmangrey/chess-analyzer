@@ -64,12 +64,12 @@ export function ChessBoardPanel({ fen, orientation, move, evaluation, selectedPl
   }), [fen, model, orientation, squareStyles]);
 
   return (
-    <BentoCard as="section" id="review-board" className="scroll-mt-24 p-3 sm:p-5 lg:p-6">
+    <BentoCard as="section" id="review-board" className="h-full scroll-mt-24 p-3 sm:p-4">
       <div role="img" className="review-board flex w-full items-stretch gap-2 sm:gap-3" aria-label={`Шахматная доска после выбранного хода, ориентация: ${orientation === "white" ? "белые" : "чёрные"}`}>
         <EvaluationBar evaluation={evaluation} />
         <div className="aspect-square min-w-0 flex-1"><Chessboard options={options} /></div>
       </div>
-      <div className="mt-5"><BoardNavigation selectedPly={selectedPly} total={total} onSelect={onSelect} /></div>
+      <div className="mt-3"><BoardNavigation selectedPly={selectedPly} total={total} onSelect={onSelect} /></div>
     </BentoCard>
   );
 }

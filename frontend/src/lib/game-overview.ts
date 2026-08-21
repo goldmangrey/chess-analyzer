@@ -1,4 +1,6 @@
 import type { AnalysisStatus, ErrorType, GameIntelligenceResponse, GamePhase, GamePhaseStatistics, GameResult } from "./api/types";
+import { taxonomyLabel } from "./chess-labels.ts";
+import { localizeOpeningFamily, localizeOpeningName, localizeOpeningVariation } from "./opening-localization.ts";
 
 const PHASE_ORDER: GamePhase[] = ["opening", "middlegame", "endgame"];
 const TAXONOMY_PRIORITY: ErrorType[] = [
@@ -11,23 +13,6 @@ const PHASE_LABELS: Record<GamePhase, string> = {
   opening: "Дебют",
   middlegame: "Миттельшпиль",
   endgame: "Эндшпиль",
-};
-
-const TAXONOMY_LABELS: Record<ErrorType, string> = {
-  hanging_piece: "Потеря фигуры",
-  missed_capture: "Упущенные взятия",
-  missed_check: "Упущенные шахи",
-  missed_mate: "Упущенный мат",
-  allowed_mate: "Допущенный мат",
-  king_safety: "Безопасность короля",
-  development: "Развитие фигур",
-  bad_exchange: "Неудачные размены",
-  pawn_structure: "Пешечная структура",
-  tactical_pattern: "Тактические ошибки",
-  fork: "Вилки",
-  pin: "Связки",
-  skewer: "Линейные удары",
-  back_rank: "Слабость последней горизонтали",
 };
 
 export type OverviewPhase = { key: GamePhase; label: string; metrics: GamePhaseStatistics };
@@ -46,15 +31,24 @@ export function formatTimeControl(value: string | null): string | null {
   return `${base}+${Number(match[2] ?? 0)}`;
 }
 
-export function formatOpening(opening: GameIntelligenceResponse["opening"]): { name: string; eco: string | null } | null {
-  if (opening.name) return { name: opening.name, eco: opening.eco };
-  if (opening.eco) return { name: opening.eco, eco: null };
+type OpeningInput = Pick<GameIntelligenceResponse["opening"], "eco" | "name"> & Partial<GameIntelligenceResponse["opening"]>;
+
+export function formatOpening(opening: OpeningInput): { name: string; eco: string | null; family: string | null; variation: string | null; subvariation: string | null } | null {
+  if (opening.name) return {
+    name: localizeOpeningName(opening.name) ?? opening.name,
+    eco: opening.eco,
+    family: localizeOpeningFamily(opening.family ?? opening.name.split(":", 1)[0]?.trim()) ?? null,
+    variation: localizeOpeningVariation(opening.variation) ?? null,
+    subvariation: localizeOpeningVariation(opening.subvariation) ?? null,
+  };
+  if (opening.eco) return { name: opening.eco, eco: null, family: null, variation: null, subvariation: null };
   return null;
 }
 
-export function formatAcpl(value: number | null | undefined): string {
-  if (typeof value !== "number" || !Number.isFinite(value)) return "—";
-  return new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 }).format(value);
+export function formatPlyMove(ply: number | null | undefined, san: string | null | undefined): string | null {
+  if (!ply || ply < 1 || !san) return null;
+  const moveNumber = Math.ceil(ply / 2);
+  return `${moveNumber}${ply % 2 === 0 ? "..." : "."}${san}`;
 }
 
 export function canShowIntelligence(analysis: { status: AnalysisStatus; intelligence_ready: boolean }): boolean {
@@ -82,23 +76,23 @@ export function presentPhases(phases: GameIntelligenceResponse["phases"]): Overv
 }
 
 function comparablePhases(phases: GameIntelligenceResponse["phases"]): OverviewPhase[] {
-  return presentPhases(phases).filter(({ metrics }) => typeof metrics.average_cp_loss === "number" && Number.isFinite(metrics.average_cp_loss));
+  return presentPhases(phases).filter(({ metrics }) => typeof metrics.accuracy === "number" && Number.isFinite(metrics.accuracy));
 }
 
 export function selectStrongestPhase(phases: GameIntelligenceResponse["phases"]): OverviewPhase | null {
   const valid = comparablePhases(phases);
   if (valid.length < 2) return null;
-  return [...valid].sort((a, b) => (a.metrics.average_cp_loss ?? 0) - (b.metrics.average_cp_loss ?? 0) || PHASE_ORDER.indexOf(a.key) - PHASE_ORDER.indexOf(b.key))[0];
+  return [...valid].sort((a, b) => (b.metrics.accuracy ?? 0) - (a.metrics.accuracy ?? 0) || PHASE_ORDER.indexOf(a.key) - PHASE_ORDER.indexOf(b.key))[0];
 }
 
 export function selectWeakestPhase(phases: GameIntelligenceResponse["phases"]): OverviewPhase | null {
   const valid = comparablePhases(phases);
   if (valid.length < 2) return null;
-  return [...valid].sort((a, b) => (b.metrics.average_cp_loss ?? 0) - (a.metrics.average_cp_loss ?? 0) || PHASE_ORDER.indexOf(b.key) - PHASE_ORDER.indexOf(a.key))[0];
+  return [...valid].sort((a, b) => (a.metrics.accuracy ?? 0) - (b.metrics.accuracy ?? 0) || PHASE_ORDER.indexOf(b.key) - PHASE_ORDER.indexOf(a.key))[0];
 }
 
 export function formatTaxonomyLabel(type: ErrorType): string {
-  return TAXONOMY_LABELS[type];
+  return taxonomyLabel(type);
 }
 
 export function selectMainWeakness(breakdown: GameIntelligenceResponse["error_breakdown"]): { type: ErrorType; label: string; count: number } | null {

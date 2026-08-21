@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import type { CriticalMoment, ErrorClassification, MoveAnalysis } from "../src/lib/api/types.ts";
+import type { CriticalMoment, ErrorClassification, MoveAnalysis, MoveCommentary } from "../src/lib/api/types.ts";
 import { STANDARD_START_FEN } from "../src/lib/chess-position.ts";
 import { formatReviewEvaluation, fullMoveReviewPresentation, principalVariationPresentation } from "../src/lib/review-board.ts";
 
@@ -23,6 +23,8 @@ function moment(type: CriticalMoment["type"] = "turning_point"): CriticalMoment 
   return { ply: 1, move_number: 1, move_san: "e4", move_uci: "e2e4", phase: "opening", type, severity: "mistake", centipawn_loss: 566, evaluation_before: 244, evaluation_after: -322, evaluation_before_user_pov: 244, evaluation_after_user_pov: -322, importance_score: 80 };
 }
 
+const commentary: MoveCommentary = { headline: "Фигура под ударом", summary: "Конь на b5 остаётся под ударом.", details: ["Соперник может его забрать."], recommendation: "Лучше было сыграть Nc3.", intent: "hanging_piece" };
+
 test("mistake, blunder and inaccuracy panels share their board quality mapping", () => {
   assert.equal(fullMoveReviewPresentation(move(), null, null, "white")?.label, "Ошибка");
   assert.equal(fullMoveReviewPresentation(move({ classification: "blunder" }), null, null, "white")?.label, "Зевок");
@@ -33,31 +35,30 @@ test("best move panel does not duplicate played and best moves", () => {
   const review = fullMoveReviewPresentation(move({ best_move_uci: "e2e4", best_move_san: "e4", classification: "normal" }), null, null, "white");
   assert.equal(review?.label, "Лучший");
   assert.equal(review?.isBest, true);
-  assert.equal(review?.explanation, "Это сильнейший найденный движком ход.");
+  assert.equal(review?.explanation, "Комментарий к этому ходу недоступен.");
 });
 
 test("missing best move remains a useful positive panel", () => {
   const review = fullMoveReviewPresentation(move({ best_move_uci: null, best_move_san: null, classification: "normal" }), null, null, "white");
   assert.equal(review?.bestSan, null);
-  assert.equal(review?.explanation, "Ход сохраняет оценку позиции.");
+  assert.equal(review?.explanation, "Комментарий к этому ходу недоступен.");
 });
 
-test("specific deterministic explanations cover mate, capture and fork", () => {
-  assert.match(fullMoveReviewPresentation(move(), error("allowed_mate"), null, "white")?.explanation ?? "", /соперник получает форсированный мат/);
-  assert.match(fullMoveReviewPresentation(move(), error("missed_mate"), null, "white")?.explanation ?? "", /упустил/);
-  assert.equal(fullMoveReviewPresentation(move(), error("missed_capture"), null, "white")?.explanation, "Здесь было более сильное взятие.");
-  assert.match(fullMoveReviewPresentation(move(), error("fork"), null, "white")?.explanation ?? "", /вилку/);
+test("backend commentary is the only semantic explanation source", () => {
+  const review = fullMoveReviewPresentation(move(), error("hanging_piece"), null, "white", commentary);
+  assert.equal(review?.explanation, commentary.summary);
+  assert.equal(review?.commentary?.headline, commentary.headline);
 });
 
 test("turning point is used after low-confidence taxonomy fallback", () => {
   const review = fullMoveReviewPresentation(move(), error("hanging_piece", "low"), moment(), "white");
-  assert.equal(review?.explanation, "После этого хода оценка позиции резко меняется.");
+  assert.equal(review?.explanation, "Комментарий к этому ходу недоступен.");
   assert.doesNotMatch(review?.explanation ?? "", /без защиты/);
 });
 
-test("generic severity explanations remain available without derived intelligence", () => {
-  assert.match(fullMoveReviewPresentation(move({ classification: "blunder" }), null, null, "white")?.explanation ?? "", /значительно/);
-  assert.match(fullMoveReviewPresentation(move({ classification: "inaccuracy" }), null, null, "white")?.explanation ?? "", /более точное/);
+test("legacy responses without commentary use a neutral unavailable fallback", () => {
+  assert.equal(fullMoveReviewPresentation(move({ classification: "blunder" }), null, null, "white")?.explanation, "Комментарий к этому ходу недоступен.");
+  assert.equal(fullMoveReviewPresentation(move({ classification: "inaccuracy" }), null, null, "white")?.explanation, "Комментарий к этому ходу недоступен.");
 });
 
 test("normal evaluation formatting uses explicit user POV", () => {

@@ -30,10 +30,11 @@ test("UTC timestamp is formatted in the supplied browser timezone", () => {
   );
 });
 
-test("dashboard polls all three resources every 15 seconds", () => {
+test("dashboard polls legacy stats, unified intelligence, settings and game statuses every 15 seconds", () => {
   assert.equal(DASHBOARD_POLL_INTERVAL_MS, 15_000);
   assert.match(dashboardSource, /fetchAppSettings\(signal\)/);
   assert.match(dashboardSource, /fetchDashboard\(signal\)/);
+  assert.match(dashboardSource, /fetchPlayerIntelligence\(30, signal\)/);
   assert.match(dashboardSource, /fetchGames\(/);
 });
 

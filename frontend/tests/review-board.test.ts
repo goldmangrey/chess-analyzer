@@ -91,10 +91,10 @@ test("missing best move, missing FEN and malformed UCI fail safely", () => {
   assert.equal(fenForSelectedPly([move({ fen_before: "" })], 1), STANDARD_START_FEN);
 });
 
-test("mate, missed capture and generic turning point explanations are deterministic", () => {
-  assert.match(moveReviewPresentation(move(), error(), null)?.explanation ?? "", /форсированный мат/);
-  assert.equal(moveReviewPresentation(move(), error({ primary_type: "missed_capture" }), null)?.explanation, "Здесь было более сильное взятие.");
-  assert.equal(moveReviewPresentation(move(), null, moment())?.explanation, "После этого хода оценка позиции резко меняется.");
+test("review presentation consumes backend commentary and has a legacy-safe fallback", () => {
+  const commentary = { headline: "Был доступен мат", summary: "Здесь был доступен мат.", details: [], recommendation: "Лучше было сыграть Qh7#.", intent: "missed_mate" };
+  assert.equal(moveReviewPresentation(move(), error(), null, commentary)?.explanation, commentary.summary);
+  assert.equal(moveReviewPresentation(move(), null, moment())?.explanation, "Комментарий к этому ходу недоступен.");
 });
 
 test("low-confidence taxonomy never produces its specific claim", () => {

@@ -13,6 +13,12 @@ from app.models import (
     GamePhase,
     GameResult,
     MoveClassification,
+    OverallDirection,
+    PlayerIntelligenceStatus,
+    PlayerStrengthType,
+    ProfileConfidenceLevel,
+    TimeControlSegment,
+    TrendDirection,
     SyncStatus,
 )
 
@@ -271,6 +277,10 @@ class GamePhaseStatistics(ApiSchema):
     end_ply: int
     user_moves: int
     average_cp_loss: float | None
+    accuracy: float | None = None
+    accuracy_eligible_moves: int = 0
+    accuracy_coverage_rate: float | None = None
+    accuracy_quality_band: Literal["excellent", "good", "fair", "poor"] | None = None
     inaccuracies: int
     mistakes: int
     blunders: int
@@ -336,10 +346,51 @@ class IntelligenceGameResponse(IntelligenceSchema):
 class IntelligenceOpeningResponse(IntelligenceSchema):
     eco: str | None
     name: str | None
+    family: str | None
+    variation: str | None
+    subvariation: str | None
+    deepest_match_ply: int | None
+    deepest_match_move_san: str | None
+    last_named_match_ply: int | None
+    last_named_match_move_san: str | None
+    last_sequence_book_ply: int | None
+    last_sequence_book_move_san: str | None
+    first_deviation_ply: int | None
+    first_deviation_move_san: str | None
+    transposition_reentry: bool
+    first_reentry_ply: int | None
+
+
+class MoveCommentaryResponse(IntelligenceSchema):
+    headline: str
+    summary: str
+    details: tuple[str, ...]
+    recommendation: str | None
+    intent: str
+
+
+class MoveHumanMetricsResponse(IntelligenceSchema):
+    win_percent_before: float
+    win_percent_after: float
+    win_percent_loss: float
+    accuracy: float
+    quality_band: Literal["excellent", "good", "fair", "poor"]
+
+
+class MoveReviewEntryResponse(IntelligenceSchema):
+    ply: int
+    commentary: MoveCommentaryResponse
+    opening_status: Literal["book", "deviation", "post_book", "reentry"] | None
+    human_metrics: MoveHumanMetricsResponse | None
 
 
 class IntelligenceSummaryResponse(IntelligenceSchema):
     average_cp_loss: float | None
+    accuracy: float | None
+    accuracy_eligible_moves: int
+    accuracy_total_moves: int
+    accuracy_coverage_rate: float | None
+    accuracy_quality_band: Literal["excellent", "good", "fair", "poor"] | None
     user_moves: int
     inaccuracies: int
     mistakes: int
@@ -348,6 +399,7 @@ class IntelligenceSummaryResponse(IntelligenceSchema):
 
 class GameIntelligenceResponse(IntelligenceSchema):
     intelligence_version: str
+    human_metrics_version: str
     analysis: IntelligenceAnalysisResponse
     game: IntelligenceGameResponse
     opening: IntelligenceOpeningResponse
@@ -356,6 +408,347 @@ class GameIntelligenceResponse(IntelligenceSchema):
     critical_moments: tuple[CriticalMomentResponse, ...]
     errors: tuple[ErrorClassificationResponse, ...]
     error_breakdown: dict[ErrorType, int]
+    move_reviews: tuple[MoveReviewEntryResponse, ...]
+
+
+class PlayerIntelligenceWindowResponse(IntelligenceSchema):
+    requested_games: int = Field(description="Requested current/recent game window.")
+    available_analyzed_games: int = Field(
+        description="Backward-compatible alias for selected_games."
+    )
+    selected_games: int = Field(
+        description="Completed analyzed games selected into the current profile."
+    )
+    total_available_analyzed_games: int = Field(
+        description="All completed analyzed games available before window limiting."
+    )
+
+
+class PlayerIntelligenceSampleResponse(IntelligenceSchema):
+    games: int
+    user_moves: int
+    white_games: int
+    black_games: int
+    wins: int
+    draws: int
+    losses: int
+
+
+class PlayerIntelligenceOverallResponse(IntelligenceSchema):
+    average_cp_loss: float | None
+    accuracy: float | None
+    accuracy_eligible_moves: int
+    accuracy_coverage_rate: float | None
+    accuracy_quality_band: Literal["excellent", "good", "fair", "poor"] | None
+    inaccuracies: int
+    mistakes: int
+    blunders: int
+    inaccuracies_per_game: float | None
+    mistakes_per_game: float | None
+    blunders_per_game: float | None
+    inaccuracies_per_100_moves: float | None
+    mistakes_per_100_moves: float | None
+    blunders_per_100_moves: float | None
+    blunder_free_games: int
+    blunder_free_rate: float | None
+
+
+class PlayerIntelligenceDataQualityResponse(IntelligenceSchema):
+    games_with_move_analysis: int
+    games_with_phase_data: int
+    games_with_complete_evaluations: int
+    moves_with_cp_loss: int
+    moves_with_classification: int
+    games_with_taxonomy_data: int
+    moves_eligible_for_taxonomy: int
+    moves_with_primary_taxonomy: int
+    moves_with_phase: int
+    moves_without_phase: int
+    games_with_known_time_control: int
+    games_with_known_color: int
+    moves_eligible_for_accuracy: int
+    accuracy_coverage_rate: float | None
+
+
+class RecurringErrorSeverityResponse(IntelligenceSchema):
+    inaccuracies: int
+    mistakes: int
+    blunders: int
+
+
+class RecurringErrorPhasesResponse(IntelligenceSchema):
+    opening: int
+    middlegame: int
+    endgame: int
+    unknown: int
+
+
+class RecurringErrorEvidenceResponse(IntelligenceSchema):
+    game_id: int
+    ply: int
+    classification: MoveClassification
+    phase: GamePhase | None
+    played_move_san: str | None
+    played_move_uci: str
+    centipawn_loss: int
+
+
+class RecurringErrorResponse(IntelligenceSchema):
+    taxonomy: ErrorType
+    incidents: int
+    games_affected: int
+    games_affected_rate: float | None
+    incidents_per_game: float | None
+    incidents_per_100_moves: float | None
+    severity: RecurringErrorSeverityResponse
+    phases: RecurringErrorPhasesResponse
+    evidence: tuple[RecurringErrorEvidenceResponse, ...]
+
+
+class ProfileConfidenceResponse(IntelligenceSchema):
+    level: ProfileConfidenceLevel
+    score: float
+    sample_games: int
+    eligible_games: int
+    coverage_rate: float | None
+    eligible_user_moves: int
+
+
+class WeaknessComponentsResponse(IntelligenceSchema):
+    spread: float
+    frequency: float
+    severity: float
+    recurrence: float
+
+
+class WeaknessEvidenceSummaryResponse(IntelligenceSchema):
+    incidents: int
+    games_affected: int
+    games_affected_rate: float | None
+    incidents_per_100_moves: float | None
+
+
+class PlayerWeaknessResponse(IntelligenceSchema):
+    taxonomy: ErrorType
+    score: float
+    rank: int
+    confidence: ProfileConfidenceResponse
+    components: WeaknessComponentsResponse
+    evidence_summary: WeaknessEvidenceSummaryResponse
+    evidence: tuple[RecurringErrorEvidenceResponse, ...]
+
+
+class PlayerStrengthResponse(IntelligenceSchema):
+    type: PlayerStrengthType
+    score: float
+    rank: int
+    confidence: ProfileConfidenceResponse
+    normalized_component: float
+    metrics: dict[str, float]
+
+
+class PlayerPhaseMetricsResponse(IntelligenceSchema):
+    user_moves: int
+    games_with_phase: int
+    participation_rate: float | None
+    moves_with_cp_loss: int
+    moves_with_classification: int
+    average_cp_loss: float | None
+    accuracy: float | None
+    accuracy_eligible_moves: int
+    accuracy_coverage_rate: float | None
+    accuracy_quality_band: Literal["excellent", "good", "fair", "poor"] | None
+    inaccuracies: int
+    mistakes: int
+    blunders: int
+    inaccuracies_per_100_moves: float | None
+    mistakes_per_100_moves: float | None
+    blunders_per_100_moves: float | None
+    serious_errors: int
+    serious_errors_per_100_moves: float | None
+
+
+class PhaseScoreComponentsResponse(IntelligenceSchema):
+    acpl: float | None
+    serious_error_rate: float | None
+
+
+class PhasePerformanceResponse(IntelligenceSchema):
+    phase: GamePhase
+    weakness_score: float | None
+    components: PhaseScoreComponentsResponse
+    confidence: ProfileConfidenceResponse
+
+
+class FirstSeriousBreakdownResponse(IntelligenceSchema):
+    eligible_games: int
+    games_with_serious_error: int
+    opening: int
+    middlegame: int
+    endgame: int
+    unknown: int
+    no_serious_error: int
+    opening_share: float | None
+    middlegame_share: float | None
+    endgame_share: float | None
+    unknown_share: float | None
+
+
+class PhaseProfileResponse(IntelligenceSchema):
+    performance: dict[GamePhase, PhasePerformanceResponse]
+    strongest_phase: PhasePerformanceResponse | None
+    weakest_phase: PhasePerformanceResponse | None
+    first_serious_breakdown: FirstSeriousBreakdownResponse
+
+
+class TrendConfidenceResponse(IntelligenceSchema):
+    level: ProfileConfidenceLevel
+    score: float
+    recent_games: int
+    previous_games: int
+    recent_user_moves: int
+    previous_user_moves: int
+    coverage_rate: float | None
+
+
+class MetricTrendResponse(IntelligenceSchema):
+    recent: float | None
+    previous: float | None
+    absolute_change: float | None
+    relative_change: float | None
+    direction: TrendDirection
+    confidence: TrendConfidenceResponse
+
+
+class OverallTrendsResponse(IntelligenceSchema):
+    average_cp_loss: MetricTrendResponse
+    accuracy: MetricTrendResponse
+    inaccuracies_per_100_moves: MetricTrendResponse
+    mistakes_per_100_moves: MetricTrendResponse
+    blunders_per_100_moves: MetricTrendResponse
+    serious_errors_per_100_moves: MetricTrendResponse
+    blunder_free_rate: MetricTrendResponse
+
+
+class PhaseTrendsResponse(IntelligenceSchema):
+    average_cp_loss: MetricTrendResponse
+    serious_errors_per_100_moves: MetricTrendResponse
+
+
+class TaxonomyTrendResponse(IntelligenceSchema):
+    taxonomy: ErrorType
+    incidents_per_100_moves: MetricTrendResponse
+    games_affected_rate: MetricTrendResponse
+
+
+class PlayerTrendsResponse(IntelligenceSchema):
+    window_games: int
+    recent_games: int
+    previous_games: int
+    overall: OverallTrendsResponse
+    phases: dict[GamePhase, PhaseTrendsResponse]
+    recurring_errors: tuple[TaxonomyTrendResponse, ...]
+
+
+class SegmentMetricsResponse(IntelligenceSchema):
+    games: int
+    user_moves: int
+    average_cp_loss: float | None
+    accuracy: float | None
+    accuracy_eligible_moves: int
+    accuracy_coverage_rate: float | None
+    accuracy_quality_band: Literal["excellent", "good", "fair", "poor"] | None
+    mistakes_per_100_moves: float | None
+    blunders_per_100_moves: float | None
+    serious_errors_per_100_moves: float | None
+    blunder_free_rate: float | None
+    wins: int
+    draws: int
+    losses: int
+    confidence: ProfileConfidenceResponse
+
+
+class PlayerSegmentsResponse(IntelligenceSchema):
+    time_controls: dict[TimeControlSegment, SegmentMetricsResponse]
+    colors: dict[Color, SegmentMetricsResponse]
+    games_with_known_time_control: int
+    games_with_known_color: int
+
+
+class SummaryConfidenceResponse(IntelligenceSchema):
+    level: ProfileConfidenceLevel
+    score: float
+
+
+class MainWeaknessResponse(IntelligenceSchema):
+    taxonomy: ErrorType
+    score: float
+    confidence: ProfileConfidenceResponse
+
+
+class MainStrengthResponse(IntelligenceSchema):
+    type: PlayerStrengthType
+    score: float
+    confidence: ProfileConfidenceResponse
+
+
+class SummaryPhaseResponse(IntelligenceSchema):
+    phase: GamePhase
+    weakness_score: float | None
+    confidence: ProfileConfidenceResponse
+
+
+class PlayerIntelligenceSummaryResponse(IntelligenceSchema):
+    status: PlayerIntelligenceStatus = Field(
+        description="ready, limited, or insufficient based on sample, coverage, and conclusions."
+    )
+    main_weakness: MainWeaknessResponse | None
+    main_strength: MainStrengthResponse | None
+    strongest_phase: SummaryPhaseResponse | None
+    weakest_phase: SummaryPhaseResponse | None
+    overall_direction: OverallDirection = Field(
+        description="Conservative synthesis of five core overall factual trends."
+    )
+    confidence: SummaryConfidenceResponse
+
+
+class PlayerOpeningRecordResponse(IntelligenceSchema):
+    eco: str | None
+    name: str | None
+    family: str | None
+    variation: str | None
+    subvariation: str | None
+    games: int
+    wins: int
+    draws: int
+    losses: int
+
+
+class PlayerOpeningIntelligenceResponse(IntelligenceSchema):
+    selected_games: int
+    games_with_recognized_opening: int
+    games_with_opening_identity: int
+    recognition_coverage_rate: float | None
+    top: tuple[PlayerOpeningRecordResponse, ...]
+    by_color: dict[Color, tuple[PlayerOpeningRecordResponse, ...]]
+
+
+class PlayerIntelligenceResponse(IntelligenceSchema):
+    intelligence_version: str
+    human_metrics_version: str
+    window: PlayerIntelligenceWindowResponse
+    sample: PlayerIntelligenceSampleResponse
+    overall: PlayerIntelligenceOverallResponse
+    data_quality: PlayerIntelligenceDataQualityResponse
+    recurring_errors: tuple[RecurringErrorResponse, ...]
+    weaknesses: tuple[PlayerWeaknessResponse, ...]
+    strengths: tuple[PlayerStrengthResponse, ...]
+    phases: dict[GamePhase, PlayerPhaseMetricsResponse]
+    phase_profile: PhaseProfileResponse
+    trends: PlayerTrendsResponse
+    segments: PlayerSegmentsResponse
+    summary: PlayerIntelligenceSummaryResponse
+    openings: PlayerOpeningIntelligenceResponse
 
 
 class GameDetailResponse(ApiSchema):

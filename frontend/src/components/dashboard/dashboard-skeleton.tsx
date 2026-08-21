@@ -2,18 +2,15 @@ import { BentoGrid, BentoGridItem } from "@/components/layout";
 import { BentoCard, Skeleton } from "@/components/ui";
 
 function SkeletonCard({ className }: { className?: string }) {
-  return <BentoCard className={`h-full p-6 sm:p-8 ${className ?? ""}`}><Skeleton rounded="full" className="h-4 w-28" /><Skeleton rounded="lg" className="mt-6 h-16 w-3/4" /><Skeleton rounded="full" className="mt-5 h-4 w-full" /></BentoCard>;
+  return <BentoCard className={`h-full p-4 sm:p-5 ${className ?? ""}`}><Skeleton rounded="full" className="h-3 w-24" /><Skeleton rounded="lg" className="mt-4 h-10 w-3/4" /><Skeleton rounded="full" className="mt-4 h-3 w-full" /></BentoCard>;
 }
 
 export function DashboardSkeleton() {
   return (
-    <BentoGrid aria-label="Загрузка Dashboard">
-      <BentoGridItem className="md:col-span-6 xl:col-span-8"><SkeletonCard className="min-h-72" /></BentoGridItem>
-      <BentoGridItem className="md:col-span-6 xl:col-span-4"><SkeletonCard className="min-h-72" /></BentoGridItem>
-      <BentoGridItem className="md:col-span-3 xl:col-span-5"><SkeletonCard className="min-h-52" /></BentoGridItem>
-      <BentoGridItem className="md:col-span-3 xl:col-span-7"><SkeletonCard className="min-h-52" /></BentoGridItem>
-      <BentoGridItem className="md:col-span-6 xl:col-span-8"><SkeletonCard className="min-h-80" /></BentoGridItem>
-      <BentoGridItem className="md:col-span-6 xl:col-span-4"><SkeletonCard className="min-h-80" /></BentoGridItem>
-    </BentoGrid>
+    <div aria-label="Загрузка Dashboard" className="space-y-4">
+      <section data-dashboard-tier="1" className="space-y-3"><BentoCard className="p-4 sm:p-5"><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"><div><Skeleton rounded="full" className="h-3 w-36" /><Skeleton rounded="lg" className="mt-4 h-9 w-24" /></div><div><Skeleton rounded="full" className="h-3 w-20" /><Skeleton rounded="lg" className="mt-3 h-7 w-full" /></div><div><Skeleton rounded="full" className="h-3 w-24" /><Skeleton rounded="lg" className="mt-3 h-6 w-28" /></div></div></BentoCard><BentoGrid className="gap-3"><BentoGridItem className="md:col-span-3 xl:col-span-6"><SkeletonCard className="min-h-28" /></BentoGridItem><BentoGridItem className="md:col-span-3 xl:col-span-6"><SkeletonCard className="min-h-28" /></BentoGridItem></BentoGrid><BentoCard className="p-4 sm:p-5"><Skeleton rounded="full" className="h-3 w-24" /><div className="mt-4 grid grid-cols-3 divide-x divide-[var(--border-subtle)]">{[0, 1, 2].map((phase) => <div key={phase} className="px-3 first:pl-0 last:pr-0"><Skeleton rounded="full" className="h-3 w-20" /><Skeleton rounded="lg" className="mt-3 h-8 w-16" /><Skeleton rounded="full" className="mt-2 h-3 w-24 max-w-full" /></div>)}</div></BentoCard></section>
+      <section data-dashboard-tier="2"><BentoGrid className="gap-4"><BentoGridItem className="md:col-span-3 xl:col-span-5"><BentoCard className="p-4 sm:p-5"><Skeleton rounded="full" className="h-3 w-32" /><Skeleton rounded="lg" className="mt-3 h-6 w-48" /><div className="mt-3 divide-y divide-[var(--border-subtle)]">{[0, 1, 2].map((row) => <div key={row} className="flex h-14 items-center gap-3"><Skeleton rounded="full" className="size-4" /><div className="flex-1"><Skeleton rounded="full" className="h-3 w-2/3" /><Skeleton rounded="full" className="mt-2 h-2.5 w-1/2" /></div></div>)}</div></BentoCard></BentoGridItem><BentoGridItem className="md:col-span-3 xl:col-span-7"><BentoCard className="h-full p-4 sm:p-5"><Skeleton rounded="full" className="h-3 w-24" /><Skeleton rounded="lg" className="mt-4 h-9 w-20" /><Skeleton rounded="full" className="mt-4 h-2 w-full" /><div className="mt-4 grid grid-cols-2 gap-3"><Skeleton rounded="full" className="h-3 w-24" /><Skeleton rounded="full" className="h-3 w-24" /></div></BentoCard></BentoGridItem></BentoGrid></section>
+      <section data-dashboard-tier="3"><BentoGrid className="gap-4"><BentoGridItem><BentoCard className="p-4 sm:p-5"><Skeleton rounded="full" className="h-3 w-28" /><Skeleton rounded="full" className="mt-3 h-3 w-44" /><div className="mt-4 grid gap-4 sm:grid-cols-2">{[0, 1].map((color) => <div key={color}><Skeleton rounded="full" className="h-3 w-20" /><div className="mt-2 divide-y divide-[var(--border-subtle)]">{[0, 1, 2].map((row) => <div key={row} className="py-3"><Skeleton rounded="full" className="h-3 w-4/5" /><Skeleton rounded="full" className="mt-2 h-2.5 w-3/5" /></div>)}</div></div>)}</div></BentoCard></BentoGridItem><BentoGridItem><BentoCard className="p-4 sm:p-5"><Skeleton rounded="full" className="h-3 w-24" /><div className="mt-4 grid gap-4 sm:grid-cols-2">{[0, 1].map((group) => <div key={group}><Skeleton rounded="full" className="h-3 w-24" /><div className="mt-2 space-y-3">{[0, 1, 2].map((row) => <Skeleton key={row} rounded="full" className="h-8 w-full" />)}</div></div>)}</div></BentoCard></BentoGridItem></BentoGrid></section>
+    </div>
   );
 }

@@ -59,3 +59,14 @@ def test_standard_opening_header_is_provider_agnostic_fallback() -> None:
 
     assert opening.name == "King's Pawn Game"
     assert opening.source == "pgn_header"
+
+
+def test_more_specific_explicit_header_is_not_replaced_by_shallow_position() -> None:
+    opening = resolve_opening(
+        moves("1. e4"),
+        eco="B90",
+        opening_name="Sicilian Defense: Najdorf Variation, English Attack",
+    )
+    assert opening.eco == "B90"
+    assert opening.name == "Sicilian Defense: Najdorf Variation, English Attack"
+    assert opening.source == "pgn_header"

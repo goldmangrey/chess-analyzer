@@ -1,0 +1,29 @@
+{
+  "duplicate_epd_positions": 0,
+  "duplicate_epd_records": 0,
+  "eco_volume_distribution": {
+    "A": 817,
+    "B": 772,
+    "C": 1250,
+    "D": 614,
+    "E": 357
+  },
+  "license": "CC0-1.0",
+  "malformed_rows": 0,
+  "normalized_records": 3810,
+  "revision": "4b8622759e7ae6f93f011cc6c83a3823401ab45e",
+  "runtime_artifact": "openings.jsonl",
+  "runtime_bytes": 1000772,
+  "runtime_sha256": "42324c16efc615b909945fc83dc7d5acbb97792eca4fc63402b7c2fff345dcc7",
+  "source_files": [
+    "a.tsv",
+    "b.tsv",
+    "c.tsv",
+    "d.tsv",
+    "e.tsv"
+  ],
+  "source_repository": "https://github.com/lichess-org/chess-openings",
+  "source_rows": 3810,
+  "unique_eco": 500,
+  "unique_epd": 3810
+}

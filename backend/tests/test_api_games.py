@@ -107,7 +107,11 @@ def test_game_detail_personal_metrics_pending_and_missing(api_app, api_client) -
             "start_ply": 1,
             "end_ply": 2,
             "user_moves": 1,
-            "average_cp_loss": 100.0,
+                "average_cp_loss": 100.0,
+                "accuracy": 100.0,
+                "accuracy_eligible_moves": 1,
+                "accuracy_coverage_rate": 1.0,
+                "accuracy_quality_band": "excellent",
             "inaccuracies": 0,
             "mistakes": 1,
             "blunders": 0,
@@ -238,9 +242,17 @@ def test_unified_intelligence_serialization_and_fixed_query_count(api_app, api_c
     payload = response.json()
     assert payload["intelligence_version"] == "1"
     assert payload["analysis"] == {"status": "completed", "intelligence_ready": True}
-    assert payload["opening"] == {"eco": "B13", "name": "Caro-Kann Defense"}
+    assert payload["opening"]["eco"] == "B13"
+    assert payload["opening"]["name"] == "Caro-Kann Defense"
+    assert payload["opening"]["family"] == "Caro-Kann Defense"
+    assert payload["opening"]["deepest_match_ply"] is None
     assert payload["summary"] == {
         "average_cp_loss": 200.0,
+        "accuracy": 45.3,
+        "accuracy_eligible_moves": 1,
+        "accuracy_total_moves": 1,
+        "accuracy_coverage_rate": 1.0,
+        "accuracy_quality_band": "poor",
         "user_moves": 1,
         "inaccuracies": 0,
         "mistakes": 1,
@@ -249,6 +261,10 @@ def test_unified_intelligence_serialization_and_fixed_query_count(api_app, api_c
     assert payload["phases"]["opening"]["user_moves"] == 1
     assert payload["errors"][0]["primary_type"] == "development"
     assert payload["error_breakdown"] == {"development": 1}
+    assert payload["move_reviews"][0]["ply"] == 1
+    assert payload["move_reviews"][0]["commentary"]["headline"]
+    assert payload["move_reviews"][0]["commentary"]["summary"]
+    assert "template_id" not in payload["move_reviews"][0]["commentary"]
     assert "items" not in payload and "pgn" not in payload
     assert api_client.get("/api/games/9999/intelligence").status_code == 404
 

@@ -1,6 +1,6 @@
 import { Chess } from "chess.js";
 
-import type { CriticalMoment, CriticalMomentType, ErrorClassification, GamePhase, MoveAnalysis, MoveClassification, UserColor } from "./api/types";
+import type { CriticalMoment, CriticalMomentType, ErrorClassification, GamePhase, MoveAnalysis, MoveClassification, MoveCommentary, UserColor } from "./api/types";
 
 export type ReviewArrow = { startSquare: string; endSquare: string; color: string };
 export type MoveBadgeTone = "best" | MoveClassification;
@@ -40,23 +40,6 @@ const quality = {
 
 const MATE_EVALUATION_THRESHOLD = 90_000;
 const PV_PREVIEW_PLIES = 8;
-
-const explanations = {
-  allowed_mate: "После этого хода соперник получает форсированный мат.",
-  missed_mate: "Здесь был форсированный мат, но сыгранный ход упустил его.",
-  missed_capture: "Здесь было более сильное взятие.",
-  missed_check: "Здесь был более сильный шах.",
-  hanging_piece: "После этого хода фигура остаётся без защиты и теряется.",
-  bad_exchange: "Этот размен ухудшает материальный баланс.",
-  king_safety: "Этот ход ослабляет безопасность короля.",
-  development: "Этот ход замедляет развитие фигур.",
-  pawn_structure: "Этот ход ухудшает пешечную структуру.",
-  fork: "Ход допускает вилку на несколько фигур.",
-  pin: "После этого хода возникает опасная связка.",
-  skewer: "После этого хода возникает опасный сквозной удар.",
-  back_rank: "После этого хода возникает угроза по последней горизонтали.",
-  tactical_pattern: "После этого хода возникает конкретная тактическая угроза.",
-} as const;
 
 const criticalTypeLabels: Record<CriticalMomentType, string> = { turning_point: "Переломный момент", blunder: "Ключевой зевок", missed_opportunity: "Упущенный шанс", missed_mate: "Упущенный мат", allowed_mate: "Допущенный мат", best_move: "Сильный момент" };
 const criticalReasonLabels: Record<CriticalMomentType, string> = { turning_point: "Резкая смена оценки", blunder: "Существенная потеря оценки", missed_opportunity: "Преимущество упущено", missed_mate: "Форсированный мат упущен", allowed_mate: "Соперник получил форсированный мат", best_move: "Позиция заметно улучшена" };
@@ -113,19 +96,6 @@ export function formatUserPovEvaluation(userValue: number | null): string | null
   return `${pawns >= 0 ? "+" : ""}${pawns.toFixed(2)}`;
 }
 
-export function reviewExplanation(error: ErrorClassification | null, moment: CriticalMoment | null, classification: MoveClassification, isBest: boolean): string {
-  if (error?.confidence !== "low" && error?.primary_type) return explanations[error.primary_type];
-  if (moment?.type === "allowed_mate") return explanations.allowed_mate;
-  if (moment?.type === "missed_mate") return explanations.missed_mate;
-  if (moment?.type === "turning_point") return "После этого хода оценка позиции резко меняется.";
-  if (moment?.type === "best_move") return "Сильный ход, который заметно улучшает позицию.";
-  if (isBest) return "Это сильнейший найденный движком ход.";
-  if (classification === "blunder") return "Этот ход значительно ухудшает позицию.";
-  if (classification === "mistake") return "Этот ход заметно ухудшает позицию.";
-  if (classification === "inaccuracy") return "Есть более точное продолжение.";
-  return "Ход сохраняет оценку позиции.";
-}
-
 export function principalVariationPresentation(value: string | null, fen?: string | null): { preview: string; full: string; truncated: boolean } | null {
   if (!value || !fen) return null;
   const tokens = value.trim().split(/\s+/).filter(Boolean);
@@ -168,13 +138,14 @@ export function buildReviewBoardModel(move: MoveAnalysis | null, orientation: Us
 
 export function moveReviewPresentation(
   move: MoveAnalysis | null,
-  error: ErrorClassification | null,
-  moment: CriticalMoment | null,
+  _error: ErrorClassification | null,
+  _moment: CriticalMoment | null,
+  commentary: MoveCommentary | null = null,
 ) {
   if (!move) return null;
   const isBest = move.best_move_uci !== null && move.best_move_uci === move.played_move_uci;
   const moveQuality = moveQualityPresentation(move);
-  const explanation = reviewExplanation(error, moment, move.classification, isBest);
+  const explanation = commentary?.summary ?? "Комментарий к этому ходу недоступен.";
   const suffix = move.classification === "blunder" ? "??" : move.classification === "mistake" ? "?" : move.classification === "inaccuracy" ? "?!" : "";
   const playedSan = move.played_move_san ?? move.played_move_uci;
   return {
@@ -182,6 +153,7 @@ export function moveReviewPresentation(
     label: moveQuality.label,
     quality: moveQuality,
     explanation,
+    commentary,
     playedSan,
     bestSan: move.best_move_san ?? sanFromUci(move.fen_before, move.best_move_uci),
     isBest,
@@ -193,8 +165,9 @@ export function fullMoveReviewPresentation(
   error: ErrorClassification | null,
   moment: CriticalMoment | null,
   userColor: UserColor,
+  commentary: MoveCommentary | null = null,
 ) {
-  const review = moveReviewPresentation(move, error, moment);
+  const review = moveReviewPresentation(move, error, moment, commentary);
   if (!move || !review) return null;
   return {
     ...review,
@@ -206,7 +179,7 @@ export function fullMoveReviewPresentation(
   };
 }
 
-export function criticalMomentPresentation(moment: CriticalMoment, error: ErrorClassification | null, rank: number) {
+export function criticalMomentPresentation(moment: CriticalMoment, error: ErrorClassification | null, rank: number, commentary: MoveCommentary | null = null) {
   const visibleError = error?.confidence !== "low" && error?.primary_type ? error : null;
   return {
     rank,
@@ -214,8 +187,8 @@ export function criticalMomentPresentation(moment: CriticalMoment, error: ErrorC
     typeLabel: criticalTypeLabels[moment.type],
     severityLabel: moment.type === "best_move" ? "Лучший" : severityLabels[moment.severity],
     severityTone: moment.type === "best_move" ? "best" as const : moment.severity,
-    explanation: reviewExplanation(visibleError, moment, moment.severity, moment.type === "best_move"),
-    conciseReason: visibleError?.primary_type ? conciseTaxonomyLabels[visibleError.primary_type] : criticalReasonLabels[moment.type],
+    explanation: commentary?.summary ?? "Комментарий к этому моменту недоступен.",
+    conciseReason: commentary?.headline ?? (visibleError?.primary_type ? conciseTaxonomyLabels[visibleError.primary_type] : criticalReasonLabels[moment.type]),
     evaluationBefore: formatUserPovEvaluation(moment.evaluation_before_user_pov),
     evaluationAfter: formatUserPovEvaluation(moment.evaluation_after_user_pov),
     phaseLabel: moment.phase ? phaseLabels[moment.phase] : null,

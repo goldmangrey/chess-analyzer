@@ -2,7 +2,7 @@ import type { ApiGameListItem } from "@/lib/api/types";
 
 import { GameRow } from "./game-row";
 
-const headings = ["Соперник", "Дата", "Дебют", "Результат", "CP Loss", "Ошибки", "Зевки", "Статус", "Действие"];
+const headings = ["Соперник", "Дата", "Дебют", "Результат", "Ошибки", "Зевки", "Статус", "Действие"];
 
 export function GamesTable({ games }: { games: ApiGameListItem[] }) {
   return (

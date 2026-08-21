@@ -82,6 +82,177 @@ export type StatisticsDashboard = {
   recent_games: RecentGameStats[];
 };
 
+export type IntelligenceConfidenceLevel = "insufficient" | "low" | "medium" | "high";
+export type IntelligenceDirection = "improving" | "stable" | "worsening" | "mixed" | "insufficient";
+export type PlayerStrengthType = "low_blunder_rate" | "blunder_free_consistency" | "low_mistake_rate" | "overall_precision";
+
+export type ProfileConfidence = {
+  level: IntelligenceConfidenceLevel;
+  score: number;
+  sample_games: number;
+  eligible_games: number;
+  coverage_rate: number | null;
+  eligible_user_moves: number;
+};
+
+export type PlayerIntelligenceWeakness = {
+  taxonomy: ErrorType;
+  score: number;
+  rank: number;
+  confidence: ProfileConfidence;
+  components: { spread: number; frequency: number; severity: number; recurrence: number };
+  evidence_summary: {
+    incidents: number;
+    games_affected: number;
+    games_affected_rate: number | null;
+    incidents_per_100_moves: number | null;
+  };
+  evidence: PlayerRecurringEvidence[];
+};
+
+export type PlayerIntelligenceStrength = {
+  type: PlayerStrengthType;
+  score: number;
+  rank: number;
+  confidence: ProfileConfidence;
+  normalized_component: number;
+  metrics: Record<string, number>;
+};
+
+export type PlayerRecurringError = {
+  taxonomy: ErrorType;
+  incidents: number;
+  games_affected: number;
+  games_affected_rate: number | null;
+  incidents_per_game: number | null;
+  incidents_per_100_moves: number | null;
+  severity: { inaccuracies: number; mistakes: number; blunders: number };
+  phases: { opening: number; middlegame: number; endgame: number; unknown: number };
+  evidence: PlayerRecurringEvidence[];
+};
+
+export type PlayerRecurringEvidence = { game_id: number; ply: number; classification: MoveClassification; phase: GamePhase | null; played_move_san: string | null; played_move_uci: string; centipawn_loss: number };
+
+export type PlayerPhaseMetrics = {
+  user_moves: number;
+  games_with_phase: number;
+  participation_rate: number | null;
+  moves_with_cp_loss: number;
+  moves_with_classification: number;
+  average_cp_loss: number | null;
+  accuracy: number | null;
+  accuracy_eligible_moves: number;
+  accuracy_coverage_rate: number | null;
+  accuracy_quality_band: AccuracyQualityBand | null;
+  inaccuracies: number;
+  mistakes: number;
+  blunders: number;
+  inaccuracies_per_100_moves: number | null;
+  mistakes_per_100_moves: number | null;
+  blunders_per_100_moves: number | null;
+  serious_errors: number;
+  serious_errors_per_100_moves: number | null;
+};
+
+export type PlayerPhaseConclusion = {
+  phase: GamePhase;
+  weakness_score: number | null;
+  components: { acpl: number | null; serious_error_rate: number | null };
+  confidence: ProfileConfidence;
+};
+
+export type PlayerMetricTrend = {
+  recent: number | null;
+  previous: number | null;
+  absolute_change: number | null;
+  relative_change: number | null;
+  direction: Exclude<IntelligenceDirection, "mixed">;
+  confidence: {
+    level: IntelligenceConfidenceLevel;
+    score: number;
+    recent_games: number;
+    previous_games: number;
+    recent_user_moves: number;
+    previous_user_moves: number;
+    coverage_rate: number | null;
+  };
+};
+
+export type PlayerOpeningRecord = {
+  eco: string | null;
+  name: string | null;
+  family: string | null;
+  variation: string | null;
+  subvariation: string | null;
+  games: number;
+  wins: number;
+  draws: number;
+  losses: number;
+};
+
+export type PlayerSegmentMetrics = {
+  games: number;
+  user_moves: number;
+  average_cp_loss: number | null;
+  accuracy: number | null;
+  accuracy_eligible_moves: number;
+  accuracy_coverage_rate: number | null;
+  accuracy_quality_band: AccuracyQualityBand | null;
+  mistakes_per_100_moves: number | null;
+  blunders_per_100_moves: number | null;
+  serious_errors_per_100_moves: number | null;
+  blunder_free_rate: number | null;
+  wins: number;
+  draws: number;
+  losses: number;
+  confidence: ProfileConfidence;
+};
+
+export type PlayerIntelligenceResponse = {
+  intelligence_version: "1";
+  human_metrics_version: "1";
+  window: { requested_games: number; available_analyzed_games: number; selected_games: number; total_available_analyzed_games: number };
+  sample: { games: number; user_moves: number; white_games: number; black_games: number; wins: number; draws: number; losses: number };
+  overall: { average_cp_loss: number | null; accuracy: number | null; accuracy_eligible_moves: number; accuracy_coverage_rate: number | null; accuracy_quality_band: AccuracyQualityBand | null; inaccuracies: number; mistakes: number; blunders: number; inaccuracies_per_game: number | null; mistakes_per_game: number | null; blunders_per_game: number | null; inaccuracies_per_100_moves: number | null; mistakes_per_100_moves: number | null; blunders_per_100_moves: number | null; blunder_free_games: number; blunder_free_rate: number | null };
+  data_quality: { games_with_move_analysis: number; games_with_phase_data: number; games_with_complete_evaluations: number; moves_with_cp_loss: number; moves_with_classification: number; games_with_taxonomy_data: number; moves_eligible_for_taxonomy: number; moves_with_primary_taxonomy: number; moves_with_phase: number; moves_without_phase: number; games_with_known_time_control: number; games_with_known_color: number; moves_eligible_for_accuracy: number; accuracy_coverage_rate: number | null };
+  recurring_errors: PlayerRecurringError[];
+  weaknesses: PlayerIntelligenceWeakness[];
+  strengths: PlayerIntelligenceStrength[];
+  phases: Record<GamePhase, PlayerPhaseMetrics>;
+  phase_profile: { performance: Record<GamePhase, PlayerPhaseConclusion>; strongest_phase: PlayerPhaseConclusion | null; weakest_phase: PlayerPhaseConclusion | null; first_serious_breakdown: { eligible_games: number; games_with_serious_error: number; opening: number; middlegame: number; endgame: number; unknown: number; no_serious_error: number; opening_share: number | null; middlegame_share: number | null; endgame_share: number | null; unknown_share: number | null } };
+  trends: {
+    window_games: number;
+    recent_games: number;
+    previous_games: number;
+    overall: Record<"average_cp_loss" | "accuracy" | "inaccuracies_per_100_moves" | "mistakes_per_100_moves" | "blunders_per_100_moves" | "serious_errors_per_100_moves" | "blunder_free_rate", PlayerMetricTrend>;
+    phases: Record<GamePhase, { average_cp_loss: PlayerMetricTrend; serious_errors_per_100_moves: PlayerMetricTrend }>;
+    recurring_errors: Array<{ taxonomy: ErrorType; incidents_per_100_moves: PlayerMetricTrend; games_affected_rate: PlayerMetricTrend }>;
+  };
+  segments: {
+    time_controls: Record<"bullet" | "blitz" | "rapid" | "unknown", PlayerSegmentMetrics>;
+    colors: Record<UserColor, PlayerSegmentMetrics>;
+    games_with_known_time_control: number;
+    games_with_known_color: number;
+  };
+  summary: {
+    status: "ready" | "limited" | "insufficient";
+    main_weakness: { taxonomy: ErrorType; score: number; confidence: ProfileConfidence } | null;
+    main_strength: { type: PlayerStrengthType; score: number; confidence: ProfileConfidence } | null;
+    strongest_phase: PlayerPhaseConclusion | null;
+    weakest_phase: PlayerPhaseConclusion | null;
+    overall_direction: IntelligenceDirection;
+    confidence: { level: IntelligenceConfidenceLevel; score: number };
+  };
+  openings: {
+    selected_games: number;
+    games_with_recognized_opening: number;
+    games_with_opening_identity: number;
+    recognition_coverage_rate: number | null;
+    top: PlayerOpeningRecord[];
+    by_color: Record<UserColor, PlayerOpeningRecord[]>;
+  };
+};
+
 export type ChessComImportRequest = {
   username: string;
   limit: 5 | 10 | 20 | 50;
@@ -230,6 +401,10 @@ export type GamePhaseStatistics = {
   end_ply: number;
   user_moves: number;
   average_cp_loss: number | null;
+  accuracy: number | null;
+  accuracy_eligible_moves: number;
+  accuracy_coverage_rate: number | null;
+  accuracy_quality_band: AccuracyQualityBand | null;
   inaccuracies: number;
   mistakes: number;
   blunders: number;
@@ -269,8 +444,35 @@ export type ErrorClassification = {
   critical_moment_type: CriticalMomentType | null;
 };
 
+export type MoveCommentary = {
+  headline: string;
+  summary: string;
+  details: string[];
+  recommendation: string | null;
+  intent: string;
+};
+
+export type AccuracyQualityBand = "excellent" | "good" | "fair" | "poor";
+export type MoveHumanMetrics = {
+  win_percent_before: number;
+  win_percent_after: number;
+  win_percent_loss: number;
+  accuracy: number;
+  quality_band: AccuracyQualityBand;
+};
+
+export type OpeningMoveStatus = "book" | "deviation" | "post_book" | "reentry";
+
+export type MoveReviewEntry = {
+  ply: number;
+  commentary: MoveCommentary;
+  opening_status: OpeningMoveStatus | null;
+  human_metrics: MoveHumanMetrics | null;
+};
+
 export type GameIntelligenceResponse = {
   intelligence_version: "1" | string;
+  human_metrics_version: "1" | string;
   analysis: {
     status: AnalysisStatus;
     intelligence_ready: boolean;
@@ -292,9 +494,27 @@ export type GameIntelligenceResponse = {
   opening: {
     eco: string | null;
     name: string | null;
+    family?: string | null;
+    variation?: string | null;
+    subvariation?: string | null;
+    deepest_match_ply?: number | null;
+    deepest_match_move_san?: string | null;
+    last_named_match_ply?: number | null;
+    last_named_match_move_san?: string | null;
+    last_sequence_book_ply?: number | null;
+    last_sequence_book_move_san?: string | null;
+    first_deviation_ply?: number | null;
+    first_deviation_move_san?: string | null;
+    transposition_reentry?: boolean;
+    first_reentry_ply?: number | null;
   };
   summary: {
     average_cp_loss: number | null;
+    accuracy: number | null;
+    accuracy_eligible_moves: number;
+    accuracy_total_moves: number;
+    accuracy_coverage_rate: number | null;
+    accuracy_quality_band: AccuracyQualityBand | null;
     user_moves: number;
     inaccuracies: number;
     mistakes: number;
@@ -304,6 +524,7 @@ export type GameIntelligenceResponse = {
   critical_moments: CriticalMoment[];
   errors: ErrorClassification[];
   error_breakdown: Partial<Record<ErrorType, number>>;
+  move_reviews?: MoveReviewEntry[];
 };
 
 export type MoveAnalysis = {

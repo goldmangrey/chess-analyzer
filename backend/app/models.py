@@ -85,6 +85,48 @@ class ErrorConfidence(str, Enum):
     LOW = "low"
 
 
+class ProfileConfidenceLevel(str, Enum):
+    INSUFFICIENT = "insufficient"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class PlayerStrengthType(str, Enum):
+    LOW_BLUNDER_RATE = "low_blunder_rate"
+    BLUNDER_FREE_CONSISTENCY = "blunder_free_consistency"
+    LOW_MISTAKE_RATE = "low_mistake_rate"
+    OVERALL_PRECISION = "overall_precision"
+
+
+class TrendDirection(str, Enum):
+    IMPROVING = "improving"
+    STABLE = "stable"
+    WORSENING = "worsening"
+    INSUFFICIENT = "insufficient"
+
+
+class OverallDirection(str, Enum):
+    IMPROVING = "improving"
+    STABLE = "stable"
+    WORSENING = "worsening"
+    MIXED = "mixed"
+    INSUFFICIENT = "insufficient"
+
+
+class PlayerIntelligenceStatus(str, Enum):
+    READY = "ready"
+    LIMITED = "limited"
+    INSUFFICIENT = "insufficient"
+
+
+class TimeControlSegment(str, Enum):
+    BULLET = "bullet"
+    BLITZ = "blitz"
+    RAPID = "rapid"
+    UNKNOWN = "unknown"
+
+
 class SyncStatus(str, Enum):
     NEVER = "never"
     RUNNING = "running"

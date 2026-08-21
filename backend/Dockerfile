@@ -18,7 +18,9 @@ COPY --chown=app:app data ./data
 COPY --chown=app:app alembic ./alembic
 COPY --chown=app:app alembic.ini ./alembic.ini
 COPY --chown=app:app scripts/start_cloud_run.sh ./scripts/start_cloud_run.sh
-RUN test -r /app/data/openings.tsv
+RUN test -r /app/data/openings.tsv \
+    && test -r /app/data/openings.jsonl \
+    && test -r /app/data/openings.metadata.json
 
 RUN chmod +x ./scripts/start_cloud_run.sh
 USER app
